@@ -13,10 +13,11 @@ Feito com **HTML5, CSS3, JavaScript puro e Canvas 2D**. Sem backend, sem banco d
 - **Pausar:** botão de pausa, `P` ou `Esc`. Com o foco na área do jogo, `Espaço` também pausa.
 - **Som:** botão de som no menu e no cabeçalho. A preferência fica salva no navegador.
 - **Dificuldade:** no menu, escolha **Fácil**, **Normal** ou **Difícil**. A dificuldade ajusta a velocidade de queda, a frequência das ondas e a densidade de titãs rivais. A escolha fica salva no navegador.
-- **Objetivo:** cada humano vale **1 ponto**. Humanos perdidos não tiram pontos, mas quebram a corrente. Outro titã encerra a partida imediatamente.
+- **Objetivo:** cada humano vale **1 ponto**. Humanos perdidos não tiram pontos, mas quebram a corrente. Às vezes passa um **banquete raro** (alvo especial, marcado com estrela dourada) valendo **+3** por multiplicação. Outro titã encerra a partida imediatamente.
 - **Corrente (combo):** coma humanos em sequência, sem deixar nenhum escapar. A cada 5 capturas a pontuação dobra, até **X5**; o valor ganho aparece como pontuação flutuante no local da captura.
 - **Fases:** a cada 25 humanos o HUD mostra a fase atual (de *LANCHE LIGHT* até *FOME SEM FIM*).
-- **Conquistas:** 8 metas colecionáveis (pontuação, corrente e tempo) aparecem no menu e no ícone de recorde, com uma tela dedicada. Fica tudo salvo no navegador.
+- **Trajes do titã:** 5 aspectos (de *Titã Padrão* a *Titã da Fome*) que mudam a cor e o aura do jogador. Liberam conforme o **recorde** (50, 100, 150, 200 humanos) e podem ser equipados no menu; a escolha fica salva.
+- **Conquistas:** 9 metas colecionáveis (pontuação, corrente, banquetes e tempo) aparecem no menu e no ícone de recorde, com uma tela dedicada. Fica tudo salvo no navegador.
 - **Elenco:** o titã de olhos verdes é o jogador; Bestial e Blindado são rivais; há 7 variações de humanos sorteadas como alvos.
 
 A velocidade dos itens que caem aumenta gradualmente com a pontuação **e também com o tempo de partida** (mesmo se você não pontuar). A frequência das ondas aumenta com a pontuação. As ondas são espaçadas e sempre deixam uma rota de desvio possível. O recorde é salvo automaticamente no `localStorage` do navegador.
@@ -114,6 +115,8 @@ Durante o desenvolvimento também foi validado em Chromium com simulação mobil
 - **Probabilidade de titãs e espaçamento:** método `spawn()` em `game.js`.
 - **Corrente/multiplicador:** getters `combo` e `multiplier` e o reset no escapamento, em `step()` de `game.js`.
 - **Fases:** array `PHASES` em `game.js` (uma fase a cada 25 pontos).
+- **Alvos de banquete:** `SPECIAL_POINTS` e o raro upgrade de spawn no método `spawn()` de `game.js`; badge e efeito em `drawSpecial()` em `script.js`.
+- **Trajes do titã:** array `PLAYER_ASPECTS` + ajudante `unlockedAspects(best)` em `game.js`; lavagem de cor (`source-atop`), aura, seletor e persistência em `script.js`.
 - **Conquistas:** array `ACHIEVEMENTS` em `game.js` (metas testáveis via `engine.stats`); UI e persistência em `script.js`.
 - **Arte dos personagens:** atlas `assets/sprites.png` + frames em `assets/sprites.js`; wrappers `drawPlayer`, `drawHuman` e `drawEnemy` em `script.js`.
 - **Cenário:** `Scenery.paintBackground()` em `script.js` (cacheado em um canvas offscreen e redesenhado apenas no resize).

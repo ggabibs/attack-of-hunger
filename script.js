@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  const { HungerEngine, clamp, PLAYER_HEIGHT, PLAYER_FEET_OFFSET, ACHIEVEMENTS } = window.HungerGame;
+  const { HungerEngine, clamp, PLAYER_HEIGHT, PLAYER_FEET_OFFSET, ACHIEVEMENTS, PLAYER_ASPECTS, unlockedAspects } = window.HungerGame;
   const TAU = Math.PI * 2;
   const INK = '#293d2d';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -46,6 +46,44 @@
     ctx.closePath();
     if (fill) { ctx.fillStyle = fill; ctx.fill(); }
     if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke(); }
+  }
+
+  // Layers a translucent wash over the sprite pixels only ("source-atop" keeps
+  // the sprite's alpha shape), giving outfit color variations without new art.
+  function tintSprite(ctx, x, y, width, height, wash) {
+    if (!wash) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.clip();
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = wash;
+    ctx.fillRect(x, y, width, height);
+    ctx.restore();
+  }
+
+  function starPoints(cx, cy, outer, inner) {
+    const points = [];
+    for (let i = 0; i < 10; i++) {
+      const radius = i % 2 === 0 ? outer : inner;
+      const angle = (Math.PI / 5) * i - Math.PI / 2;
+      points.push([cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius]);
+    }
+    return points;
+  }
+
+  // Rare feast target: a human carrying a bonus, marked with a gold star.
+  function drawSpecial(ctx, x, y, variant = 0, time = 0, scale = 1) {
+    drawHuman(ctx, x, y, variant, time, scale, false);
+    const badgeY = y - 33 * scale;
+    const pulse = 1 + Math.sin(time * 6) * 0.12;
+    ctx.save();
+    ctx.translate(x, badgeY);
+    ctx.scale(scale, scale);
+    ctx.rotate(Math.sin(time * 2) * 0.25);
+    ellipse(ctx, 0, 0, 13 * pulse, 13 * pulse, 'rgba(255, 214, 94, .28)');
+    polygon(ctx, starPoints(0, 0, 9 * pulse, 4 * pulse), '#ffd75e', '#8a5a1e', 1.6);
+    ctx.restore();
   }
 
   function seededRandom(seed) {
@@ -226,7 +264,7 @@
     ctx.restore();
   }
 
-  function drawPlayer(ctx, x, feet, time, munch = 0, defeated = false, scale = 1, look = 0) {
+  function drawPlayer(ctx, x, feet, time, munch = 0, defeated = false, scale = 1, look = 0, aspect = null) {
     const eating = munch > 0.03 && !defeated;
     const name = eating ? 'player_eat' : 'player_idle';
     const frame = spriteBank.frame(name);
@@ -243,13 +281,14 @@
       else if (!reducedMotion.matches) ctx.rotate(look * 0.02);
       ctx.scale(1 + chomp * 0.05, 1 - chomp * 0.035);
       spriteBank.draw(ctx, name, -width / 2, -height, width, height);
+      tintSprite(ctx, -width / 2, -height, width, height, aspect && aspect.wash);
       ctx.restore();
       return;
     }
-    drawPlayerFallback(ctx, x, feet, time, munch, defeated, scale, look);
+    drawPlayerFallback(ctx, x, feet, time, munch, defeated, scale, look, aspect);
   }
 
-  function drawPlayerFallback(ctx, x, feet, time, munch = 0, defeated = false, scale = 1, look = 0) {
+  function drawPlayerFallback(ctx, x, feet, time, munch = 0, defeated = false, scale = 1, look = 0, aspect = null) {
     ctx.save();
     ctx.translate(x, feet);
     ctx.scale(scale, scale);
@@ -328,6 +367,7 @@
       line(ctx, [[-21,-80],[21,-80]], '#a89f78', 1);
       for (let tooth = -15; tooth <= 15; tooth += 6) line(ctx, [[tooth,-84],[tooth,-73]], '#a89f78', 1);
     }
+    tintSprite(ctx, -46, -155, 92, 165, aspect && aspect.wash);
     ctx.restore();
   }
 
@@ -343,6 +383,7 @@
       this.labels = Array.from({ length: 8 }, () => ({ active: false, x: 0, y: 0, life: 0, text: '+1', color: '#fff1bf' }));
       this.particleCursor = 0;
       this.labelCursor = 0;
+      this.playerAspect = null;
     }
 
     resize(width, height) {
@@ -561,6 +602,19 @@
       for (const label of this.labels) label.active = false;
     }
 
+    drawPlayerGlow(ctx, x, feet, aspect, scale) {
+      if (!aspect || !aspect.glow) return;
+      const gy = feet - 80 * scale;
+      const radius = 78 * scale;
+      const gradient = ctx.createRadialGradient(x, gy, 4 * scale, x, gy, radius);
+      gradient.addColorStop(0, aspect.glow + '40');
+      gradient.addColorStop(1, aspect.glow + '00');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, gy, radius, 0, TAU);
+      ctx.fill();
+    }
+
     capture(x, y, text = '+1', color = '#fff1bf') {
       const count = reducedMotion.matches ? 4 : 13;
       for (let i = 0; i < count; i++) {
@@ -613,7 +667,8 @@
           drawHuman(ctx, w*.18, h*.57 + Math.sin(ambientTime*2)*5, 0, ambientTime, 1.05);
           drawEnemy(ctx, w*.82, h*.59 + Math.sin(ambientTime*1.7+2)*4, ambientTime, .78);
         }
-        drawPlayer(ctx, px, feet, ambientTime, 0, false, playerScale, Math.sin(ambientTime*.6)*.5);
+        this.drawPlayerGlow(ctx, px, feet, this.playerAspect, playerScale);
+        drawPlayer(ctx, px, feet, ambientTime, 0, false, playerScale, Math.sin(ambientTime*.6)*.5, this.playerAspect);
         if (h > 610) {
           ctx.save();
           ctx.translate(w*.70, feet - 142*playerScale);
@@ -627,10 +682,12 @@
       } else {
         for (const entity of engine.entities) {
           if (entity.kind === 'human') drawHuman(ctx, entity.x, entity.y, entity.variant, ambientTime + entity.phase, 1);
+          else if (entity.kind === 'special') drawSpecial(ctx, entity.x, entity.y, entity.variant, ambientTime + entity.phase, 1);
           else drawEnemy(ctx, entity.x, entity.y, ambientTime + entity.phase, 1, true, entity.variant);
         }
         const look = clamp((engine.player.targetX - engine.player.x) / 50, -1, 1);
-        drawPlayer(ctx, engine.player.x, h - PLAYER_FEET_OFFSET, ambientTime, engine.player.munch, engine.state === 'over', 1, look);
+        this.drawPlayerGlow(ctx, engine.player.x, h - PLAYER_FEET_OFFSET, this.playerAspect, 1);
+        drawPlayer(ctx, engine.player.x, h - PLAYER_FEET_OFFSET, ambientTime, engine.player.munch, engine.state === 'over', 1, look, this.playerAspect);
       }
       for (const p of this.particles) {
         if (!p.active) continue;
@@ -702,6 +759,7 @@
 
     play(name) {
       if (name === 'capture') { this.tone(660,0,.10,'sine',.45); this.tone(990,.055,.13,'sine',.3); }
+      if (name === 'special') { this.tone(1046,0,.08,'sine',.4); this.tone(1318,.06,.08,'sine',.35); this.tone(1568,.12,.14,'sine',.35); }
       if (name === 'combo') { this.tone(880,0,.07,'triangle',.32); this.tone(1175,.06,.1,'triangle',.32); }
       if (name === 'achievement') { this.tone(784,0,.1,'sine',.4); this.tone(988,.08,.1,'sine',.4); this.tone(1319,.16,.18,'sine',.4); }
       if (name === 'start') { this.tone(392,0,.12,'triangle',.35); this.tone(523,.09,.12,'triangle',.35); this.tone(784,.18,.2,'sine',.4); }
@@ -721,6 +779,7 @@
     // Exposed for automated verification and debugging; the game never depends on it.
     window.__engine = engine;
     const scenery = new Scenery(canvas);
+    window.__scenery = scenery;
     const storagePrefix = 'attack-of-hunger:';
     const warnedKeys = new Set();
     function readStorage(key, fallback) {
@@ -748,6 +807,11 @@
     } catch (error) {
       unlockedAchievements = new Set();
     }
+    let currentAspectId = readStorage('aspect', 'default');
+    if (!PLAYER_ASPECTS.some(aspect => aspect.id === currentAspectId)) currentAspectId = PLAYER_ASPECTS[0].id;
+    let currentAspect = PLAYER_ASPECTS.find(aspect => aspect.id === currentAspectId) || PLAYER_ASPECTS[0];
+    if (!unlockedAspects(best).some(aspect => aspect.id === currentAspect.id)) currentAspect = PLAYER_ASPECTS[0];
+    scenery.playerAspect = currentAspect;
     const screens = {
       menu: document.getElementById('menu-screen'),
       help: document.getElementById('help-screen'),
@@ -893,6 +957,37 @@
         achievementsGrid.appendChild(card);
       }
     }
+    function renderAspects() {
+      const row = document.getElementById('aspect-row');
+      if (!row) return;
+      row.textContent = '';
+      for (const aspect of PLAYER_ASPECTS) {
+        const unlocked = aspect.unlockScore <= best;
+        const button = document.createElement('button');
+        button.className = 'aspect-button' + (aspect.id === currentAspect.id ? ' is-active' : '') + (unlocked ? '' : ' is-locked');
+        button.dataset.action = 'aspect';
+        button.dataset.aspect = aspect.id;
+        button.setAttribute('aria-pressed', String(aspect.id === currentAspect.id));
+        button.setAttribute('aria-disabled', String(!unlocked));
+        button.title = unlocked ? aspect.hint : 'Libera com ' + aspect.unlockScore + ' humanos';
+        button.innerHTML = '<span class="aspect-swatch" style="background:' + (aspect.glow || '#86a16c') + '"></span><span class="aspect-name">' + aspect.name + '</span>';
+        row.appendChild(button);
+      }
+    }
+    function selectAspect(id) {
+      const aspect = PLAYER_ASPECTS.find(a => a.id === id);
+      if (!aspect) return;
+      if (aspect.unlockScore > best) {
+        announcer.textContent = 'Esse traje libera com ' + aspect.unlockScore + ' humanos. Seu recorde é ' + best + '.';
+        return;
+      }
+      currentAspectId = aspect.id;
+      currentAspect = aspect;
+      writeStorage('aspect', aspect.id);
+      scenery.playerAspect = aspect;
+      renderAspects();
+      announcer.textContent = 'Traje equipado: ' + aspect.name;
+    }
     function startGame() {
       clearInput();
       sessionBest = best;
@@ -944,15 +1039,21 @@
     function processEvents() {
       for (const event of engine.drainEvents()) {
         if (event.type === 'capture') {
-          scenery.capture(event.x, event.y, '+' + event.points, event.multiplier > 1 ? '#f6b63c' : '#fff1bf');
-          sound.play('capture');
-          if (event.multiplier > 1 && event.combo % 5 === 0) sound.play('combo');
+          scenery.capture(event.x, event.y, '+' + event.points, event.special ? '#ffd75e' : (event.multiplier > 1 ? '#f6b63c' : '#fff1bf'));
+          if (event.special) sound.play('special');
+          else sound.play('capture');
+          if (!event.special && event.multiplier > 1 && event.combo % 5 === 0) sound.play('combo');
           updateHUD();
           if (!reducedMotion.matches && scoreElement.animate) {
             if (scoreAnimation) scoreAnimation.cancel();
             scoreAnimation = scoreElement.animate([{ transform: 'scale(1)' },{ transform: 'scale(1.25)', color: '#cf6939' },{ transform: 'scale(1)' }], { duration: 200, easing: 'ease-out' });
           }
-          if (engine.score > best) { best = engine.score; writeStorage('best', best); updateBest(); }
+          if (engine.score > best) {
+            best = engine.score;
+            writeStorage('best', best);
+            updateBest();
+            renderAspects();
+          }
           checkAchievements();
         }
         if (event.type === 'combo-reset') {
@@ -999,6 +1100,7 @@
       else if (action === 'achievements') showScreen('achievements');
       else if (action === 'close-achievements') closeAchievements();
       else if (action === 'difficulty') setDifficulty(button.dataset.difficulty);
+      else if (action === 'aspect') selectAspect(button.dataset.aspect);
       else if (action === 'sound') {
         sound.setEnabled(!sound.enabled);
         writeStorage('sound', sound.enabled ? '1' : '0');
@@ -1114,7 +1216,7 @@
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(stage);
     else window.addEventListener('resize', resize);
     resize();
-    updateBest(); updateSound(); updateDifficultyUI(); updateAchievementsUI(); showScreen('menu', false);
+    updateBest(); updateSound(); updateDifficultyUI(); updateAchievementsUI(); renderAspects(); showScreen('menu', false);
 
     function paintLegend(id, kind) {
       const legend = document.getElementById(id);
