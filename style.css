@@ -72,6 +72,15 @@ svg{width:24px;height:24px;display:block;flex-shrink:0}
 .menu-record svg{width:14px;height:14px;color:#957030}
 .menu-record strong{font-family:var(--display);font-size:18px;line-height:1;color:var(--forest);margin-left:3px;letter-spacing:0}
 .menu-record .ach-count{display:flex;align-items:center;gap:4px;font-size:7px;font-weight:800;color:#6b7d52;margin-left:7px;padding-left:8px;border-left:1px solid #52684426;letter-spacing:.5px}
+.menu-aspects{display:flex;flex-direction:column;align-items:center;gap:7px;margin-top:13px;width:100%;padding:0 12px}
+.menu-aspects .small-eyebrow{color:#36503a;font-size:8px;letter-spacing:1.4px}
+.aspect-row{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
+.aspect-button{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:72px;padding:6px 4px 5px;border-radius:11px;background:#fff4dce8;border:1.5px solid #3e573c80;color:var(--forest);font-size:8px;font-weight:800;line-height:1.2;transition:background .15s,border-color .15s,transform .1s}
+.aspect-button:active{transform:translateY(2px)}
+.aspect-button.is-active{background:#fff7e0;border-color:var(--gold);box-shadow:0 0 0 2px #f4bd5955}
+.aspect-button.is-locked{opacity:.45;background:#e9e8cc;border-color:#6b7b4930}
+.aspect-swatch{width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 2px #ffffff80}
+.aspect-name{white-space:nowrap;max-width:72px;overflow:hidden;text-overflow:ellipsis}
 .menu-actions{position:absolute;bottom:19px;left:32px;right:32px;display:flex;flex-direction:column;gap:10px;align-items:stretch}
 .menu-row{display:flex;gap:10px}
 .menu-row .button{flex:1}

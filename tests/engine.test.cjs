@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { HungerEngine, segmentHitsEllipse, clamp, ACHIEVEMENTS } = require('../game.js');
+const { HungerEngine, segmentHitsEllipse, clamp, ACHIEVEMENTS, PLAYER_ASPECTS, unlockedAspects, SPECIAL_POINTS } = require('../game.js');
 
 function seeded(seed) {
   return () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
@@ -117,7 +117,7 @@ test('spawn uses all seven human sprites and both rival titan sprites', () => {
   for (let i = 0; i < 400; i++) {
     game.spawn();
     const entity = game.entities[game.entities.length - 1];
-    if (entity.kind === 'human') {
+    if (entity.kind === 'human' || entity.kind === 'special') {
       assert.ok(entity.variant >= 0 && entity.variant <= 6);
       humans.add(entity.variant);
     } else {
@@ -337,16 +337,17 @@ test('phase names advance every 25 humans and stay capped', () => {
 });
 
 test('achievements unlock from pure match stats', () => {
-  assert.equal(ACHIEVEMENTS.length, 8);
-  const ids = (extra) => ACHIEVEMENTS.filter(a => a.test({ score: 0, combo: 0, level: 1, elapsed: 0, ...extra })).map(a => a.id);
+  assert.equal(ACHIEVEMENTS.length, 9);
+  const ids = (extra) => ACHIEVEMENTS.filter(a => a.test({ score: 0, combo: 0, level: 1, elapsed: 0, specialCount: 0, ...extra })).map(a => a.id);
   assert.deepEqual(ids({}), []);
   assert.ok(ids({ score: 1 }).includes('first-bite'));
   assert.ok(ids({ score: 25 }).includes('moderate-hunger'));
   assert.ok(ids({ score: 200 }).includes('feast'));
   assert.ok(ids({ combo: 10 }).includes('combo-ten'));
   assert.ok(ids({ combo: 20 }).includes('combo-twenty'));
+  assert.ok(ids({ specialCount: 5 }).includes('special-feast'));
   assert.ok(ids({ elapsed: 180 }).includes('survivor'));
-  assert.equal(ids({ score: 200, combo: 20, level: 21, elapsed: 200 }).length, 8);
+  assert.equal(ids({ score: 200, combo: 20, level: 21, elapsed: 200, specialCount: 5 }).length, 9);
 });
 
 test('restart resets the combo and difficulty keeps the match fair', () => {
@@ -361,5 +362,88 @@ test('restart resets the combo and difficulty keeps the match fair', () => {
     assert.equal(game.combo, 8);
     assert.equal(game.difficulty, 'hard');
     assert.ok(game.score >= 8);
+  }
+});
+
+test('feast targets spawn rarely, share human sprites and count as captures', () => {
+  const game = new HungerEngine({ random: seeded(5) });
+  game.start();
+  let specials = 0;
+  for (let i = 0; i < 400; i++) {
+    game.spawn();
+    const entity = game.entities[game.entities.length - 1];
+    if (entity.kind === 'special') {
+      specials++;
+      assert.ok(entity.variant >= 0 && entity.variant <= 6);
+      assert.ok(game.humanStreak >= 1, 'feast targets count as human-family waves');
+    }
+  }
+  assert.ok(specials > 0, 'a 400-wave session should include feast targets');
+  assert.ok(specials < 120, 'feast targets stay rare');
+  // First 3 waves never contain feast targets.
+  const early = new HungerEngine({ random: seeded(9) });
+  early.start();
+  for (let i = 0; i < 3; i++) {
+    early.spawn();
+    assert.equal(early.entities[early.entities.length - 1].kind, 'human');
+  }
+});
+
+test('a feast target gives bonus points and drives the feast achievement', () => {
+  const game = new HungerEngine(); game.start(); game.drainEvents();
+  target(game, 'special', 240, game.mouthY - 1);
+  game.update(1 / 60);
+  const capture = game.drainEvents()[0];
+  assert.equal(capture.type, 'capture');
+  assert.equal(capture.special, true);
+  assert.equal(capture.points, SPECIAL_POINTS);
+  assert.equal(game.score, SPECIAL_POINTS);
+  assert.equal(game.combo, 1);
+  assert.equal(game.specialCount, 1);
+  // The multiplier applies to feast targets too.
+  for (let n = 0; n < 5; n++) {
+    target(game, 'human', 240, game.mouthY - 1);
+    game.update(1 / 60);
+    game.drainEvents();
+  }
+  target(game, 'special', 240, game.mouthY - 1);
+  game.update(1 / 60);
+  const second = game.drainEvents()[0];
+  assert.equal(second.special, true);
+  assert.equal(second.points, SPECIAL_POINTS * game.multiplier);
+  // Five feast captures unlock the achievement through pure stats.
+  for (let n = 0; n < 4; n++) {
+    target(game, 'special', 240, game.mouthY - 1);
+    game.update(1 / 60);
+    game.drainEvents();
+  }
+  assert.equal(game.specialCount, 6);
+  assert.ok(ACHIEVEMENTS.find(a => a.id === 'special-feast').test(game.stats));
+});
+
+test('an escaped feast target resets the combo but costs no points', () => {
+  const game = new HungerEngine(); game.start(); game.drainEvents();
+  target(game, 'human', 240, game.mouthY - 1);
+  game.update(1 / 60);
+  game.drainEvents();
+  assert.equal(game.combo, 1);
+  target(game, 'special', 50, game.height + 64);
+  game.update(1 / 60);
+  assert.equal(game.score, 1);
+  assert.equal(game.combo, 0);
+  assert.deepEqual(game.drainEvents().map(e => e.type), ['combo-reset']);
+});
+
+test('player aspects unlock progressively with the best score', () => {
+  assert.equal(PLAYER_ASPECTS.length, 5);
+  assert.equal(unlockedAspects(0).map(a => a.id).join(','), 'default');
+  assert.equal(unlockedAspects(50).map(a => a.id).join(','), 'default,desert');
+  assert.equal(unlockedAspects(100).map(a => a.id).join(','), 'default,desert,shadow');
+  assert.equal(unlockedAspects(150).map(a => a.id).join(','), 'default,desert,shadow,gold');
+  assert.equal(unlockedAspects(100000).map(a => a.id).join(','), 'default,desert,shadow,gold,hunger');
+  for (const aspect of PLAYER_ASPECTS) {
+    assert.ok(aspect.id && aspect.name && aspect.hint);
+    assert.ok(aspect.unlockScore >= 0);
+    if (aspect.id !== 'default') assert.ok(aspect.wash && aspect.glow);
   }
 });
