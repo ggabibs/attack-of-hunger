@@ -12,7 +12,11 @@ Feito com **HTML5, CSS3, JavaScript puro e Canvas 2D**. Sem backend, sem banco d
 - **Computador:** mova o mouse sobre a área do jogo, ou use `←` / `→` (também `A` / `D`).
 - **Pausar:** botão de pausa, `P` ou `Esc`. Com o foco na área do jogo, `Espaço` também pausa.
 - **Som:** botão de som no menu e no cabeçalho. A preferência fica salva no navegador.
-- **Objetivo:** cada humano vale **1 ponto**. Humanos perdidos não tiram pontos. Outro titã encerra a partida imediatamente.
+- **Dificuldade:** no menu, escolha **Fácil**, **Normal** ou **Difícil**. A dificuldade ajusta a velocidade de queda, a frequência das ondas e a densidade de titãs rivais. A escolha fica salva no navegador.
+- **Objetivo:** cada humano vale **1 ponto**. Humanos perdidos não tiram pontos, mas quebram a corrente. Outro titã encerra a partida imediatamente.
+- **Corrente (combo):** coma humanos em sequência, sem deixar nenhum escapar. A cada 5 capturas a pontuação dobra, até **X5**; o valor ganho aparece como pontuação flutuante no local da captura.
+- **Fases:** a cada 25 humanos o HUD mostra a fase atual (de *LANCHE LIGHT* até *FOME SEM FIM*).
+- **Conquistas:** 8 metas colecionáveis (pontuação, corrente e tempo) aparecem no menu e no ícone de recorde, com uma tela dedicada. Fica tudo salvo no navegador.
 - **Elenco:** o titã de olhos verdes é o jogador; Bestial e Blindado são rivais; há 7 variações de humanos sorteadas como alvos.
 
 A velocidade dos itens que caem aumenta gradualmente com a pontuação **e também com o tempo de partida** (mesmo se você não pontuar). A frequência das ondas aumenta com a pontuação. As ondas são espaçadas e sempre deixam uma rota de desvio possível. O recorde é salvo automaticamente no `localStorage` do navegador.
@@ -99,15 +103,18 @@ As regras do jogo são independentes do DOM e podem ser testadas com o test runn
 node --test tests/*.test.cjs
 ```
 
-A suíte cobre pontuação, derrota imediata, colisão contínua, quase-acidentes, pausa/retomada, limites de movimento, dificuldade progressiva, redimensionamento, deltas inválidos, 100 reinícios e sessões longas com seeds determinísticas para verificar espaçamento justo e memória limitada.
+A suíte cobre pontuação, derrota imediata, colisão contínua, quase-acidentes, pausa/retomada, limites de movimento, dificuldade progressiva, **combo e multiplicadores**, **dificuldade selecionável** (velocidade, intervalo, densidade de titãs e piso de justiça), **fases por pontuação**, **conquistas por stats puros**, redimensionamento, deltas inválidos, 100 reinícios e sessões longas com seeds determinísticas para verificar espaçamento justo e memória limitada.
 
 Durante o desenvolvimento também foi validado em Chromium com simulação mobile: arraste por toque, botões direcionais, mouse, teclado, pausa por aba em segundo plano, persistência de som/recorde, armazenamento bloqueado/corrompido, reinícios repetidos e layouts de 320 px a desktop, incluindo modo paisagem.
 
 ## Personalização rápida
 
 - **Cores e tipografia:** variáveis CSS em `:root` no `style.css`.
-- **Velocidade/dificuldade:** getters `fallSpeed`, `spawnInterval` e `level` em `game.js`.
+- **Velocidade/dificuldade:** getters `fallSpeed`, `spawnInterval`, `level` e `difficulty` em `game.js`.
 - **Probabilidade de titãs e espaçamento:** método `spawn()` em `game.js`.
+- **Corrente/multiplicador:** getters `combo` e `multiplier` e o reset no escapamento, em `step()` de `game.js`.
+- **Fases:** array `PHASES` em `game.js` (uma fase a cada 25 pontos).
+- **Conquistas:** array `ACHIEVEMENTS` em `game.js` (metas testáveis via `engine.stats`); UI e persistência em `script.js`.
 - **Arte dos personagens:** atlas `assets/sprites.png` + frames em `assets/sprites.js`; wrappers `drawPlayer`, `drawHuman` e `drawEnemy` em `script.js`.
 - **Cenário:** `Scenery.paintBackground()` em `script.js` (cacheado em um canvas offscreen e redesenhado apenas no resize).
 - **Sons:** `SoundBank.play()` em `script.js`.

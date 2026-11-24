@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  const { HungerEngine, clamp, PLAYER_HEIGHT, PLAYER_FEET_OFFSET } = window.HungerGame;
+  const { HungerEngine, clamp, PLAYER_HEIGHT, PLAYER_FEET_OFFSET, ACHIEVEMENTS } = window.HungerGame;
   const TAU = Math.PI * 2;
   const INK = '#293d2d';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -340,7 +340,7 @@
       this.height = 800;
       this.scale = 1;
       this.particles = Array.from({ length: 112 }, () => ({ active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 1, size: 1, color: '', star: false }));
-      this.labels = Array.from({ length: 8 }, () => ({ active: false, x: 0, y: 0, life: 0 }));
+      this.labels = Array.from({ length: 8 }, () => ({ active: false, x: 0, y: 0, life: 0, text: '+1', color: '#fff1bf' }));
       this.particleCursor = 0;
       this.labelCursor = 0;
     }
@@ -561,7 +561,7 @@
       for (const label of this.labels) label.active = false;
     }
 
-    capture(x, y) {
+    capture(x, y, text = '+1', color = '#fff1bf') {
       const count = reducedMotion.matches ? 4 : 13;
       for (let i = 0; i < count; i++) {
         const p = this.particles[this.particleCursor++ % this.particles.length];
@@ -576,6 +576,7 @@
       }
       const label = this.labels[this.labelCursor++ % this.labels.length];
       label.active = true; label.x = x; label.y = y - 24; label.life = 0.85;
+      label.text = text; label.color = color;
     }
 
     updateEffects(dt) {
@@ -643,9 +644,9 @@
       for (const label of this.labels) {
         if (!label.active) continue;
         ctx.globalAlpha = Math.min(1, label.life * 3);
-        ctx.font = '800 32px Barlow, sans-serif'; ctx.textAlign = 'center';
-        ctx.lineWidth = 4; ctx.strokeStyle = '#385437'; ctx.strokeText('+1', label.x, label.y);
-        ctx.fillStyle = '#fff1bf'; ctx.fillText('+1', label.x, label.y);
+        ctx.font = '800 30px Barlow, sans-serif'; ctx.textAlign = 'center';
+        ctx.lineWidth = 4; ctx.strokeStyle = '#385437'; ctx.strokeText(label.text, label.x, label.y);
+        ctx.fillStyle = label.color; ctx.fillText(label.text, label.x, label.y);
       }
       ctx.globalAlpha = 1;
     }
@@ -701,6 +702,8 @@
 
     play(name) {
       if (name === 'capture') { this.tone(660,0,.10,'sine',.45); this.tone(990,.055,.13,'sine',.3); }
+      if (name === 'combo') { this.tone(880,0,.07,'triangle',.32); this.tone(1175,.06,.1,'triangle',.32); }
+      if (name === 'achievement') { this.tone(784,0,.1,'sine',.4); this.tone(988,.08,.1,'sine',.4); this.tone(1319,.16,.18,'sine',.4); }
       if (name === 'start') { this.tone(392,0,.12,'triangle',.35); this.tone(523,.09,.12,'triangle',.35); this.tone(784,.18,.2,'sine',.4); }
       if (name === 'defeat') { this.tone(180,0,.38,'sawtooth',.2,48); this.tone(110,.08,.4,'triangle',.4,40); }
       if (name === 'click') this.tone(520,0,.055,'sine',.2,650);
@@ -715,6 +718,8 @@
       return;
     }
     const engine = new HungerEngine();
+    // Exposed for automated verification and debugging; the game never depends on it.
+    window.__engine = engine;
     const scenery = new Scenery(canvas);
     const storagePrefix = 'attack-of-hunger:';
     const warnedKeys = new Set();
@@ -735,16 +740,31 @@
     let best = Number.isSafeInteger(storedBest) && storedBest >= 0 ? storedBest : 0;
     let sessionBest = best;
     const sound = new SoundBank(readStorage('sound', '1') !== '0');
+    engine.difficulty = readStorage('difficulty', 'normal');
+    let unlockedAchievements;
+    try {
+      const storedAchievements = JSON.parse(readStorage('achievements', '[]'));
+      unlockedAchievements = new Set(Array.isArray(storedAchievements) ? storedAchievements : []);
+    } catch (error) {
+      unlockedAchievements = new Set();
+    }
     const screens = {
       menu: document.getElementById('menu-screen'),
       help: document.getElementById('help-screen'),
       pause: document.getElementById('pause-screen'),
-      over: document.getElementById('gameover-screen')
+      over: document.getElementById('gameover-screen'),
+      achievements: document.getElementById('achievements-screen')
     };
     const hud = document.getElementById('game-hud');
     const controls = document.getElementById('play-controls');
     const scoreElement = document.getElementById('current-score');
+    const comboBoxElement = document.getElementById('combo-box');
+    const comboMultElement = document.getElementById('combo-mult');
+    const comboProgressElement = document.getElementById('combo-progress');
+    const phaseElement = document.getElementById('current-phase');
     const bestElements = document.querySelectorAll('[data-best]');
+    const achCountElement = document.getElementById('ach-count');
+    const achievementsGrid = document.getElementById('achievements-grid');
     const announcer = document.getElementById('announcer');
     const hint = document.getElementById('drag-hint');
     const keys = new Set();
@@ -793,21 +813,92 @@
       if (focus) {
         const target = name === 'menu' ? screens.menu.querySelector('[data-action="play"]')
           : name === 'help' ? screens.help.querySelector('[data-action="close-help"]')
+          : name === 'achievements' ? screens.achievements.querySelector('[data-action="close-achievements"]')
           : name === 'pause' ? screens.pause.querySelector('[data-action="resume"]')
           : name === 'over' ? screens.over.querySelector('[data-action="restart"]') : stage;
         target.focus({ preventScroll: true });
       }
     }
+    let hudCache = { score: -1, level: -1, phase: '', combo: -1, multiplier: -1 };
     function updateHUD() {
-      scoreElement.textContent = String(engine.score);
-      document.getElementById('current-level').textContent = String(engine.level).padStart(2, '0');
+      if (scoreElement.textContent !== String(engine.score)) scoreElement.textContent = String(engine.score);
+      if (hudCache.level !== engine.level) {
+        document.getElementById('current-level').textContent = String(engine.level).padStart(2, '0');
+        hudCache.level = engine.level;
+      }
+      if (hudCache.phase !== engine.phase) {
+        phaseElement.textContent = engine.phase;
+        hudCache.phase = engine.phase;
+      }
+      if (hudCache.combo !== engine.combo || hudCache.multiplier !== engine.multiplier) {
+        const active = engine.combo > 0;
+        comboBoxElement.hidden = !active;
+        if (active) {
+          comboMultElement.textContent = 'X' + engine.multiplier;
+          comboProgressElement.style.width = Math.round((engine.combo % 5) / 5 * 100) + '%';
+        }
+        hudCache.combo = engine.combo;
+        hudCache.multiplier = engine.multiplier;
+      }
       updateBest();
+    }
+    function updateDifficultyUI() {
+      for (const button of document.querySelectorAll('[data-difficulty]')) {
+        const active = button.dataset.difficulty === engine.difficulty;
+        button.setAttribute('aria-pressed', String(active));
+        button.classList.toggle('is-active', active);
+      }
+    }
+    function setDifficulty(value) {
+      if (!['easy', 'normal', 'hard'].includes(value)) return;
+      engine.difficulty = value;
+      writeStorage('difficulty', value);
+      updateDifficultyUI();
+      announcer.textContent = 'Dificuldade definida: ' + value;
+    }
+    function saveAchievements() {
+      writeStorage('achievements', JSON.stringify(Array.from(unlockedAchievements)));
+    }
+    function checkAchievements() {
+      const fresh = [];
+      for (const achievement of ACHIEVEMENTS) {
+        if (!unlockedAchievements.has(achievement.id) && achievement.test(engine.stats)) {
+          unlockedAchievements.add(achievement.id);
+          fresh.push(achievement);
+        }
+      }
+      if (!fresh.length) return fresh;
+      saveAchievements();
+      updateAchievementsUI();
+      sound.play('achievement');
+      announcer.textContent = fresh.length === 1
+        ? 'Conquista liberada: ' + fresh[0].name
+        : 'Conquistas liberadas: ' + fresh.map(a => a.name).join(', ');
+      return fresh;
+    }
+    function updateAchievementsUI() {
+      if (achCountElement) achCountElement.textContent = unlockedAchievements.size + '/' + ACHIEVEMENTS.length;
+      renderAchievements();
+    }
+    function renderAchievements() {
+      if (!achievementsGrid) return;
+      achievementsGrid.textContent = '';
+      for (const achievement of ACHIEVEMENTS) {
+        const unlocked = unlockedAchievements.has(achievement.id);
+        const card = document.createElement('div');
+        card.className = 'achievement-card' + (unlocked ? ' is-unlocked' : '');
+        card.innerHTML = '<span class="ach-icon" aria-hidden="true"><svg><use href="#i-trophy"/></svg></span>'
+          + '<div class="ach-text"><span class="ach-name">' + achievement.name + '</span>'
+          + '<span class="ach-hint">' + achievement.hint + '</span></div>';
+        achievementsGrid.appendChild(card);
+      }
     }
     function startGame() {
       clearInput();
       sessionBest = best;
       engine.start();
       scenery.clearEffects();
+      hudCache = { score: -1, level: -1, phase: '', combo: -1, multiplier: -1 };
       updateHUD();
       hint.classList.remove('faded');
       document.getElementById('new-record').hidden = true;
@@ -847,21 +938,34 @@
       else if (helpReturn === 'paused') showScreen('pause');
       else goMenu();
     }
+    function closeAchievements() {
+      showScreen('menu');
+    }
     function processEvents() {
       for (const event of engine.drainEvents()) {
         if (event.type === 'capture') {
-          scenery.capture(event.x, event.y);
+          scenery.capture(event.x, event.y, '+' + event.points, event.multiplier > 1 ? '#f6b63c' : '#fff1bf');
           sound.play('capture');
+          if (event.multiplier > 1 && event.combo % 5 === 0) sound.play('combo');
           updateHUD();
           if (!reducedMotion.matches && scoreElement.animate) {
             if (scoreAnimation) scoreAnimation.cancel();
             scoreAnimation = scoreElement.animate([{ transform: 'scale(1)' },{ transform: 'scale(1.25)', color: '#cf6939' },{ transform: 'scale(1)' }], { duration: 200, easing: 'ease-out' });
           }
           if (engine.score > best) { best = engine.score; writeStorage('best', best); updateBest(); }
+          checkAchievements();
+        }
+        if (event.type === 'combo-reset') {
+          updateHUD();
         }
         if (event.type === 'defeat') {
           clearInput();
           updateHUD();
+          const freshAchievements = checkAchievements();
+          let announcement = 'Você comeu outro titã! Fim de jogo. ' + engine.score + ' humanos. Recorde: ' + best + '.';
+          if (freshAchievements.length) {
+            announcement += ' Conquista(s) liberada(s): ' + freshAchievements.map(a => a.name).join(', ') + '.';
+          }
           document.getElementById('final-score').textContent = String(engine.score);
           document.getElementById('new-record').hidden = !(engine.score > sessionBest && engine.score >= best);
           showScreen('over');
@@ -874,7 +978,7 @@
             stage.classList.add('shake');
           }
           sound.play('defeat');
-          announcer.textContent = 'Você comeu outro titã! Fim de jogo. ' + engine.score + ' humanos. Recorde: ' + best + '.';
+          announcer.textContent = announcement;
         }
       }
     }
@@ -892,6 +996,9 @@
       else if (action === 'menu') goMenu();
       else if (action === 'help') openHelp();
       else if (action === 'close-help') closeHelp();
+      else if (action === 'achievements') showScreen('achievements');
+      else if (action === 'close-achievements') closeAchievements();
+      else if (action === 'difficulty') setDifficulty(button.dataset.difficulty);
       else if (action === 'sound') {
         sound.setEnabled(!sound.enabled);
         writeStorage('sound', sound.enabled ? '1' : '0');
@@ -912,6 +1019,7 @@
       if (event.code === 'Escape' || event.code === 'KeyP') {
         if (event.repeat) { event.preventDefault(); return; }
         if (currentScreen === 'help') { event.preventDefault(); closeHelp(); }
+        else if (currentScreen === 'achievements') { event.preventDefault(); closeAchievements(); }
         else if (engine.state === 'playing') { event.preventDefault(); pauseGame(); }
         else if (engine.state === 'paused') { event.preventDefault(); resumeGame(); }
         return;
@@ -1006,7 +1114,7 @@
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(stage);
     else window.addEventListener('resize', resize);
     resize();
-    updateBest(); updateSound(); showScreen('menu', false);
+    updateBest(); updateSound(); updateDifficultyUI(); updateAchievementsUI(); showScreen('menu', false);
 
     function paintLegend(id, kind) {
       const legend = document.getElementById(id);
@@ -1034,6 +1142,7 @@
           if (left !== right) engine.move(right ? 1 : -1, dt);
           engine.update(dt);
           if (engine.events.length) processEvents();
+          updateHUD();
           if (engine.elapsed > 5) hint.classList.add('faded');
         }
         if (engine.state !== 'paused') {
