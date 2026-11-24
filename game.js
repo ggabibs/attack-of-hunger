@@ -18,6 +18,22 @@
   const PLAYER_FEET_OFFSET = 22;
   const PLAYER_MOUTH_FROM_TOP = 24;
 
+  // Visible phases advance every 25 humans; the current name is shown in the HUD.
+  const PHASES = ['LANCHE LIGHT', 'FOME MODERADA', 'FOME CRÍTICA', 'FOME ABSOLUTA', 'FOME DO CONTINENTE', 'FOME SEM FIM'];
+
+  // Collectible goals. test() receives pure match stats, so it stays testable
+  // without a DOM: { score, combo, level, elapsed }.
+  const ACHIEVEMENTS = [
+    { id: 'first-bite', name: 'Primeiro lanche', hint: 'Comer o primeiro humano.', test: (s) => s.score >= 1 },
+    { id: 'moderate-hunger', name: 'Fome moderada', hint: 'Chegar a 25 humanos.', test: (s) => s.score >= 25 },
+    { id: 'critical-hunger', name: 'Fome crítica', hint: 'Chegar a 50 humanos.', test: (s) => s.score >= 50 },
+    { id: 'century', name: 'Centurão', hint: 'Chegar a 100 humanos.', test: (s) => s.score >= 100 },
+    { id: 'feast', name: 'Fome sem fim', hint: 'Chegar a 200 humanos.', test: (s) => s.score >= 200 },
+    { id: 'combo-ten', name: 'Corretiva dez', hint: 'Fazer uma corrente de 10 humanos.', test: (s) => s.combo >= 10 },
+    { id: 'combo-twenty', name: 'Mestre da corrente', hint: 'Fazer uma corrente de 20 humanos.', test: (s) => s.combo >= 20 },
+    { id: 'survivor', name: 'Sobrevivente', hint: 'Ficar 3 minutos na partida.', test: (s) => s.elapsed >= 180 }
+  ];
+
   // Swept collision in ellipse space: a fast target cannot skip the player.
   function segmentHitsEllipse(ax, ay, bx, by, rx, ry) {
     const sx = ax / rx;
@@ -38,9 +54,11 @@
       this.width = options.width || 480;
       this.height = options.height || 800;
       this.random = options.random || Math.random;
+      this.difficulty = options.difficulty || 'normal';
       this.state = 'menu';
       this.score = 0;
       this.elapsed = 0;
+      this.combo = 0;
       this.entities = [];
       this.pool = [];
       this.events = [];
@@ -55,6 +73,13 @@
 
     get mouthY() { return this.height - PLAYER_FEET_OFFSET - PLAYER_HEIGHT + PLAYER_MOUTH_FROM_TOP; }
     get level() { return 1 + Math.floor(this.score / 10); }
+    get multiplier() {
+      // Combo multiplier: every 5 consecutive captures it rises one tier, capped at X5.
+      return Math.min(1 + Math.floor(Math.max(this.combo, 0) / 5), 5);
+    }
+    get phaseIndex() { return Math.min(Math.floor(this.score / 25), PHASES.length - 1); }
+    get phase() { return PHASES[this.phaseIndex]; }
+    get stats() { return { score: this.score, combo: this.combo, level: this.level, elapsed: this.elapsed }; }
     get timeSpeedBoost() {
       // Speed ramps up with survived time even if the player scores nothing.
       // Full time bonus is reached after 150 seconds and then stays capped.
@@ -62,13 +87,16 @@
     }
     get fallSpeed() {
       const scoreBoost = Math.min(this.score, 100) * 0.00275;
-      return this.height * Math.min(0.65, 0.255 + scoreBoost + this.timeSpeedBoost);
+      const difficultyBoost = this.difficulty === 'easy' ? -0.0275 : this.difficulty === 'hard' ? 0.025 : 0;
+      return this.height * Math.min(0.65, 0.255 + difficultyBoost + scoreBoost + this.timeSpeedBoost);
     }
     get spawnInterval() {
       // In short landscape worlds, keep a minimum absolute vertical gap as well.
       // Use the maximum possible fall speed (score + time) for fairness.
-      const fairnessFloor = Math.max(0.58, 160 / (this.height * 0.65));
-      return Math.max(fairnessFloor, 1.06 - this.score * 0.0065);
+      const fairnessFloor = Math.max(0.58, 160 / (this.height * 0.65))
+        * (this.difficulty === 'easy' ? 1.1 : this.difficulty === 'hard' ? 0.9 : 1);
+      const factor = this.difficulty === 'easy' ? 1.2 : this.difficulty === 'hard' ? 0.9 : 1;
+      return Math.max(fairnessFloor, (1.06 - this.score * 0.0065) * factor);
     }
     get laneCount() { return clamp(Math.floor((this.width - 72) / 72), 4, 10); }
 
@@ -76,6 +104,7 @@
       while (this.entities.length) this.pool.push(this.entities.pop());
       this.score = 0;
       this.elapsed = 0;
+      this.combo = 0;
       this.spawnClock = 0.45;
       this.spawnCount = 0;
       this.lastLane = -1;
@@ -141,7 +170,10 @@
       // One target per wave, with a generous vertical gap even at maximum speed.
       // There is always an open lane; we never generate an unavoidable wall.
       const roll = this.random();
-      let kind = this.spawnCount < 3 || roll > 0.33 ? 'human' : 'titan';
+      // Rival titan density by difficulty: titan when roll <= threshold.
+      // Easy ~20% titans, normal ~33%, hard ~80% of eligible waves.
+      const titanThreshold = this.difficulty === 'easy' ? 0.2 : this.difficulty === 'hard' ? 0.8 : 0.33;
+      let kind = this.spawnCount < 3 || roll > titanThreshold ? 'human' : 'titan';
       if (this.titanStreak >= 2) kind = 'human';
       if (this.humanStreak >= 4) kind = 'titan';
       let lane = Math.floor(this.random() * this.laneCount);
@@ -210,13 +242,28 @@
             this.events.push({ type: 'defeat', x: entity.x, y: entity.y, score: this.score });
             return;
           }
-          this.score++;
+          this.combo++;
+          const points = this.multiplier;
+          this.score += points;
           this.player.munch = 0.25;
-          this.events.push({ type: 'capture', x: entity.x, y: entity.y, score: this.score });
+          this.events.push({
+            type: 'capture',
+            x: entity.x,
+            y: entity.y,
+            score: this.score,
+            points,
+            combo: this.combo,
+            multiplier: this.multiplier
+          });
           this.pool.push(entity);
           continue;
         }
         if (entity.y > this.height + 65) {
+          // An escaped human breaks the combo streak, but costs no points.
+          if (entity.kind === 'human' && this.combo > 0) {
+            this.combo = 0;
+            this.events.push({ type: 'combo-reset' });
+          }
           this.pool.push(entity);
           continue;
         }
@@ -232,5 +279,5 @@
     }
   }
 
-  return { HungerEngine, segmentHitsEllipse, clamp, PLAYER_HEIGHT, PLAYER_FEET_OFFSET, PLAYER_MOUTH_FROM_TOP };
+  return { HungerEngine, segmentHitsEllipse, clamp, PLAYER_HEIGHT, PLAYER_FEET_OFFSET, PLAYER_MOUTH_FROM_TOP, PHASES, ACHIEVEMENTS };
 });

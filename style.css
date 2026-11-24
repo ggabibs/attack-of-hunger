@@ -71,7 +71,13 @@ svg{width:24px;height:24px;display:block;flex-shrink:0}
 .menu-record{display:flex;align-items:center;gap:7px;background:#fff5d9d9;border:1px solid #50644230;border-radius:30px;padding:7px 12px;margin-top:16px;font-size:8px;font-weight:900;letter-spacing:1px;color:#4b6041;box-shadow:0 2px 0 #5268440c}
 .menu-record svg{width:14px;height:14px;color:#957030}
 .menu-record strong{font-family:var(--display);font-size:18px;line-height:1;color:var(--forest);margin-left:3px;letter-spacing:0}
+.menu-record .ach-count{display:flex;align-items:center;gap:4px;font-size:7px;font-weight:800;color:#6b7d52;margin-left:7px;padding-left:8px;border-left:1px solid #52684426;letter-spacing:.5px}
 .menu-actions{position:absolute;bottom:19px;left:32px;right:32px;display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.menu-row{display:flex;gap:10px}
+.menu-row .button{flex:1}
+.menu-difficulty{display:flex;align-items:center;gap:6px;background:#fff4dce8;border:1.5px solid #3e573c;border-radius:14px;padding:5px 6px;font-size:8px;font-weight:900;letter-spacing:.8px;color:#4b6041}
+.diff-button{flex:1;min-height:36px;border-radius:10px;font-family:var(--display);font-size:13px;font-weight:800;letter-spacing:.5px;background:transparent;color:#4b6041;border:1.5px solid transparent;transition:background .15s,color .15s,box-shadow .15s}
+.diff-button.is-active{background:var(--gold);color:var(--deep);border-color:var(--deep);box-shadow:0 2px 0 var(--deep)}
 .button{min-height:48px;width:100%;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--display);font-size:20px;font-weight:800;letter-spacing:.8px;padding:10px 15px;transition:background .16s,box-shadow .16s,transform .16s;line-height:1.1}
 .button svg{width:20px;height:20px}
 .button-primary{background:var(--gold);color:var(--deep);border:2px solid var(--deep);box-shadow:0 4px 0 var(--deep)}
@@ -104,8 +110,14 @@ svg{width:24px;height:24px;display:block;flex-shrink:0}
 .pause-button{width:43px;height:43px;background:var(--paper);border:2px solid var(--forest);color:var(--forest);border-radius:12px;box-shadow:0 3px 0 #263e3233}
 .pause-button:hover{background:#ffdf9c}
 .pause-button svg{width:20px;height:20px}
-.level-tag{position:absolute;top:83px;left:2px;display:flex;align-items:center;gap:5px;font-size:8px;font-weight:900;letter-spacing:1.1px;color:#3b593c}
+.level-tag{position:absolute;top:83px;left:2px;display:flex;align-items:center;gap:5px;font-size:8px;font-weight:900;letter-spacing:1.1px;color:#3b593c;white-space:nowrap}
 .level-dot{width:5px;height:5px;border-radius:50%;background:#4a7342}
+.phase-sep{color:#5d7a53;opacity:.7}
+.combo-box{display:flex;flex-direction:column;align-items:center;gap:3px;align-self:flex-start;background:#294832e8;color:var(--paper);border-radius:11px;padding:8px 10px 7px;border:1.5px solid #f4bd5955}
+.combo-box>span:first-child{font-size:7px;font-weight:900;letter-spacing:1.1px;color:#d9e1c1}
+.combo-box strong{font-family:var(--display);font-size:20px;line-height:1;color:var(--gold)}
+.combo-bar{width:44px;height:4px;border-radius:4px;background:#ffffff22;overflow:hidden}
+.combo-bar i{display:block;height:100%;width:0;background:var(--gold);border-radius:4px;transition:width .12s linear}
 .play-controls{position:absolute;bottom:19px;left:19px;right:19px;z-index:3;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
 .direction-button{width:53px;height:48px;background:#fff4dbb8;color:var(--forest);border:1.5px solid #304e3870;border-radius:14px;display:grid;place-items:center;box-shadow:0 3px 0 #304e3830;pointer-events:auto;touch-action:none;transition:background .1s}
 .direction-button:active,.direction-button.is-held{background:var(--gold);transform:translateY(2px)}
@@ -163,6 +175,16 @@ kbd{font-family:var(--body);font-weight:800;display:inline-grid;place-items:cent
 .result-stats small{font-size:9px;color:#748060}
 .new-record{display:flex;align-items:center;justify-content:center;gap:4px;font-size:9px;font-weight:900;color:#9e6824;margin:-7px 0 17px;letter-spacing:.4px}
 .new-record svg{width:14px;height:14px}
+.achievements-dialog{max-width:400px}
+.achievements-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
+.achievement-card{display:flex;gap:8px;align-items:flex-start;background:#e9e8cc;border:1.5px solid #6b7b4930;border-radius:12px;padding:10px 9px;text-align:left;opacity:.55}
+.achievement-card.is-unlocked{opacity:1;background:#fff7e0;border-color:#f4bd5999;box-shadow:0 2px 0 #f4bd5933}
+.ach-icon{width:26px;height:26px;flex-shrink:0;display:grid;place-items:center;border-radius:8px;background:#dbe3bc;color:#957030}
+.achievement-card.is-unlocked .ach-icon{background:var(--gold);color:var(--deep)}
+.ach-icon svg{width:16px;height:16px}
+.ach-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ach-name{font-size:10px;font-weight:900;color:var(--forest);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ach-hint{font-size:8px;color:#6b7d52;line-height:1.4}
 .stage-flash{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;background:#e36e43}
 .stage-flash.flash{animation:defeat-flash .45s ease-out}
 .game-stage.shake{animation:stage-shake .32s ease-out}
@@ -199,7 +221,7 @@ kbd{font-family:var(--body);font-weight:800;display:inline-grid;place-items:cent
 @media(max-width:1150px){.site-shell{padding:0 34px}.game-layout{gap:30px;grid-template-columns:minmax(170px,1fr) minmax(340px,430px) minmax(165px,.85fr)}.intro-panel h2{font-size:58px}.intro-copy{font-size:11px}.food-rule{gap:9px}.food-rule strong{font-size:11px}.rule-label{font-size:8px}.original-note{font-size:8px}.guide-top h2{font-size:38px}.guide-top p,.tip-card p{font-size:11px}.tip-card{padding-inline:13px}.tip-bottom{font-size:5.8px;margin-inline:-13px;padding-inline:5px}.keyboard-guide{flex-wrap:wrap}.keyboard-guide span{font-size:8px}.site-footer{font-size:6px;letter-spacing:.8px}}
 @media(max-width:960px){.site-shell{padding:0 30px;max-width:800px}.site-header{height:80px}.game-layout{grid-template-columns:minmax(200px,1fr) minmax(340px,440px);gap:40px;margin-top:26px}.guide-panel{display:none}.intro-panel h2{font-size:65px}.intro-copy{font-size:12px}.food-rule strong{font-size:12px}.game-stage{height:min(730px,calc(100svh - 162px))}.site-footer>span:nth-child(2){display:none}.site-footer{font-size:7px}.edition{font-size:8px;letter-spacing:1px}}
 @media(max-width:680px){.site-shell{padding:0;max-width:480px}.site-header{height:calc(59px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 18px 0;border-bottom:1px solid #ffffff0c}.brand{font-size:20px;gap:8px}.brand-mark{width:28px;height:31px;border-radius:7px 7px 10px 10px}.brand-mark svg{width:26px;height:26px}.brand-of{font-size:12px}.brand-dot{font-size:7px;top:4px}.edition{display:none}.header-sound{width:32px;height:32px}.header-sound svg{width:16px;height:16px}.game-layout{display:block;margin:8px 10px 12px}.intro-panel,.guide-panel,.site-footer{display:none}.game-stage{height:calc(100svh - 83px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:510px;max-height:900px;border-width:3px;border-radius:21px;box-shadow:0 6px 0 #172d24,0 10px 25px #15281d33}.stage-vignette{border-radius:17px}.menu-heading{margin-top:29px}.menu-heading p{font-size:9px}.menu-record{margin-top:13px}.menu-actions{left:27px;right:27px;bottom:16px}.game-eyebrow{font-size:7px;letter-spacing:1.5px}.title-attack{font-size:clamp(64px,19cqw,83px)}.title-hunger{font-size:clamp(73px,22cqw,96px)}.menu-heading h1{margin-top:10px}.modal-screen{padding:16px}.dialog{padding:25px 22px 22px}.help-dialog h2{font-size:44px}.game-hud{top:15px;left:14px;right:14px}.play-controls{left:15px;right:15px;bottom:17px}.direction-button{width:51px;height:46px}.drag-hint{font-size:8px;padding:6px 8px}.defeat-dialog h2{font-size:41px}.help-rules{gap:14px;margin:20px 0}.help-controls{margin-bottom:17px}}
-@media(max-width:370px){.menu-actions{left:21px;right:21px}.game-eyebrow{font-size:6px;letter-spacing:1.3px}.menu-heading p{font-size:8px}.dialog{padding-inline:17px}.help-dialog .button{font-size:15px}.dialog h2{font-size:41px}.defeat-dialog h2{font-size:37px}.best-box{padding:8px}.score-box{min-width:73px}.drag-hint{font-size:7px}.direction-button{width:45px}}
+@media(max-width:370px){.menu-actions{left:21px;right:21px}.game-eyebrow{font-size:6px;letter-spacing:1.3px}.menu-heading p{font-size:8px}.dialog{padding-inline:17px}.help-dialog .button{font-size:15px}.dialog h2{font-size:41px}.defeat-dialog h2{font-size:37px}.best-box{padding:8px}.score-box{min-width:73px}.combo-box{padding:7px 8px 6px}.combo-bar{width:38px}.drag-hint{font-size:7px}.direction-button{width:45px}.achievements-grid{grid-template-columns:1fr}}
 @media(max-height:760px) and (min-width:681px){.site-header{height:74px}.game-layout{margin-top:22px;margin-bottom:22px}.game-stage{height:calc(100svh - 147px);min-height:555px}.site-footer{min-height:45px}.menu-heading{margin-top:24px}.menu-heading p{margin-top:11px}.menu-record{margin-top:11px}.title-attack{font-size:70px}.title-hunger{font-size:82px}.intro-panel h2{font-size:60px}.intro-panel h2{margin-block:17px}.intro-copy{margin:24px 0}.food-chain{margin-top:20px}.original-note{margin-top:23px}.guide-top>svg{margin-top:17px}.tip-card{margin-top:24px}}
 @media(max-height:740px) and (max-width:680px){.menu-heading{margin-top:21px}.menu-heading p{margin-top:10px}.menu-record{margin-top:10px;padding:5px 10px}.title-attack{font-size:65px}.title-hunger{font-size:75px}.title-of{font-size:16px;margin:2px 0 1px}.menu-actions{bottom:12px;gap:8px}.play-button{min-height:52px}.menu-actions .button-secondary{min-height:39px}.menu-sound{min-height:26px}.dialog{padding-top:22px;padding-bottom:20px}.help-dialog h2{font-size:37px;margin-top:9px}.help-rules{gap:11px;margin:15px 0}.help-rules p{font-size:10px}.help-rules strong{font-size:12px}.help-controls{padding:8px;margin-bottom:14px}.defeat-stamp{width:50px;height:50px;margin-bottom:10px}.defeat-stamp>svg{width:37px;height:37px}.defeat-dialog h2{font-size:37px}.defeat-dialog>p{margin:10px 0 13px}.result-stats{padding:12px 0;margin-bottom:17px}.result-stats strong{font-size:45px}}
 @media(max-height:620px) and (max-width:680px){.site-header{height:calc(47px + env(safe-area-inset-top,0px))}.game-layout{margin-top:5px;margin-bottom:9px}.game-stage{height:calc(100svh - 64px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:440px}.menu-heading{margin-top:16px}.menu-heading p{display:none}.menu-record{margin-top:9px}.title-attack{font-size:58px}.title-hunger{font-size:67px}.game-eyebrow{font-size:6px}.menu-actions{bottom:10px}.menu-actions .button-secondary{min-height:35px}.play-button{min-height:46px;font-size:24px}.menu-sound{min-height:23px}.modal-screen{align-items:flex-start;padding:12px}.dialog{margin:auto 0}.help-dialog h2{font-size:32px}.help-rules{gap:9px}.help-controls{margin-bottom:12px}.dialog .button{min-height:43px}.defeat-dialog .dialog-eyebrow{font-size:7px}.pause-dialog h2{font-size:50px}.dialog-symbol{margin-bottom:12px;width:43px;height:43px}}

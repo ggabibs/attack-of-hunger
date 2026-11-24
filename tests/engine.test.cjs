@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { HungerEngine, segmentHitsEllipse, clamp } = require('../game.js');
+const { HungerEngine, segmentHitsEllipse, clamp, ACHIEVEMENTS } = require('../game.js');
 
 function seeded(seed) {
   return () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
@@ -249,5 +249,117 @@ test('long seeded sessions keep fair spacing, no target overlap and bounded memo
     }
     assert.ok(game.score > 40);
     assert.ok(game.pool.length <= 10);
+  }
+});
+
+test('combo multiplier rises every five captures and feeds the score', () => {
+  const game = new HungerEngine(); game.start(); game.drainEvents();
+  for (let i = 0; i < 12; i++) {
+    target(game, 'human', 240, game.mouthY - 1);
+    game.update(1 / 60);
+    game.drainEvents();
+  }
+  assert.equal(game.combo, 12);
+  // Captures 1-4 score +1 each (total 4), the 5th rises to X2 (total 6),
+  // captures 6-9 score +2 each (total 14), and 10-12 rise to X3 (+3 each, total 23).
+  assert.equal(game.score, 23);
+  assert.equal(game.multiplier, 3);
+  target(game, 'human', 240, game.mouthY - 1);
+  game.update(1 / 60);
+  const capture = game.drainEvents()[0];
+  assert.equal(capture.type, 'capture');
+  assert.equal(capture.points, 3);
+  assert.equal(capture.combo, 13);
+  assert.equal(capture.score, game.score);
+  assert.equal(capture.multiplier, 3);
+  // The multiplier caps at X5 and the combo keeps growing.
+  for (let i = 0; i < 40; i++) {
+    target(game, 'human', 240, game.mouthY - 1);
+    game.update(1 / 60);
+    game.drainEvents();
+  }
+  assert.equal(game.combo, 53);
+  assert.equal(game.multiplier, 5);
+});
+
+test('an escaped human resets the combo but costs no points', () => {
+  const game = new HungerEngine(); game.start(); game.drainEvents();
+  for (let i = 0; i < 3; i++) {
+    target(game, 'human', 240, game.mouthY - 1);
+    game.update(1 / 60);
+    game.drainEvents();
+  }
+  assert.equal(game.combo, 3);
+  assert.equal(game.score, 3);
+  target(game, 'human', 50, game.height + 64);
+  game.update(1 / 60);
+  assert.equal(game.score, 3);
+  assert.equal(game.combo, 0);
+  assert.deepEqual(game.drainEvents().map(e => e.type), ['combo-reset']);
+});
+
+test('difficulty tunes fall speed, spawn interval, fairness floor and titan density', () => {
+  const easy = new HungerEngine({ difficulty: 'easy' });
+  const normal = new HungerEngine();
+  const hard = new HungerEngine({ difficulty: 'hard' });
+  easy.start(); normal.start(); hard.start();
+  assert.ok(easy.fallSpeed < normal.fallSpeed);
+  assert.ok(hard.fallSpeed > normal.fallSpeed);
+  assert.ok(easy.spawnInterval > normal.spawnInterval);
+  assert.ok(hard.spawnInterval < normal.spawnInterval);
+  // Even hard mode keeps a fair absolute gap at maximum speed.
+  hard.score = 100000;
+  hard.elapsed = 100000;
+  assert.ok(hard.fallSpeed * hard.spawnInterval * 0.94 > 150);
+  const titanDensity = (difficulty, seed) => {
+    const game = new HungerEngine({ random: seeded(seed), difficulty });
+    game.start();
+    let titans = 0;
+    for (let i = 0; i < 300; i++) {
+      game.spawn();
+      if (game.entities[game.entities.length - 1].kind === 'titan') titans++;
+    }
+    return titans;
+  };
+  assert.ok(titanDensity('hard', 7) > titanDensity('easy', 7));
+});
+
+test('phase names advance every 25 humans and stay capped', () => {
+  const game = new HungerEngine(); game.start();
+  assert.equal(game.phase, 'LANCHE LIGHT');
+  assert.equal(game.phaseIndex, 0);
+  game.score = 25;
+  assert.equal(game.phase, 'FOME MODERADA');
+  game.score = 100;
+  assert.equal(game.phase, 'FOME DO CONTINENTE');
+  game.score = 100000;
+  assert.equal(game.phase, 'FOME SEM FIM');
+});
+
+test('achievements unlock from pure match stats', () => {
+  assert.equal(ACHIEVEMENTS.length, 8);
+  const ids = (extra) => ACHIEVEMENTS.filter(a => a.test({ score: 0, combo: 0, level: 1, elapsed: 0, ...extra })).map(a => a.id);
+  assert.deepEqual(ids({}), []);
+  assert.ok(ids({ score: 1 }).includes('first-bite'));
+  assert.ok(ids({ score: 25 }).includes('moderate-hunger'));
+  assert.ok(ids({ score: 200 }).includes('feast'));
+  assert.ok(ids({ combo: 10 }).includes('combo-ten'));
+  assert.ok(ids({ combo: 20 }).includes('combo-twenty'));
+  assert.ok(ids({ elapsed: 180 }).includes('survivor'));
+  assert.equal(ids({ score: 200, combo: 20, level: 21, elapsed: 200 }).length, 8);
+});
+
+test('restart resets the combo and difficulty keeps the match fair', () => {
+  const game = new HungerEngine({ difficulty: 'hard', random: seeded(11) });
+  for (let i = 0; i < 6; i++) {
+    game.start();
+    for (let n = 0; n < 8; n++) {
+      target(game, 'human', 240, game.mouthY - 1);
+      game.update(1 / 60);
+      game.drainEvents();
+    }
+    assert.equal(game.combo, 8);
+    assert.equal(game.difficulty, 'hard');
+    assert.ok(game.score >= 8);
   }
 });
