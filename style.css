@@ -89,15 +89,10 @@ svg{width:24px;height:24px;display:block;flex-shrink:0}
 .diff-button{flex:1;min-height:36px;border-radius:10px;font-family:var(--display);font-size:13px;font-weight:800;letter-spacing:.5px;background:transparent;color:#4b6041;border:1.5px solid transparent;transition:background .15s,color .15s,box-shadow .15s}
 .diff-button.is-active{background:var(--gold);color:var(--deep);border-color:var(--deep);box-shadow:0 2px 0 var(--deep)}
 
-/* Botão de ajuda (?) no canto superior */
-.menu-help-button{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:10px;background:#fff4dce8;border:1.5px solid #3e573c;color:#4b6041;box-shadow:0 2px 0 #3e573c}
-.menu-help-button svg{width:18px;height:18px}
-.menu-help-button:hover{background:#fff4dcf2}
-
 /* Grade de botões abaixo de JOGAR */
-.menu-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;width:100%}
-.menu-grid .button{width:100%;min-height:42px;font-size:12px;gap:5px}
-.menu-grid .button svg{width:15px;height:15px}
+.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;width:100%}
+.menu-grid .button{width:100%;min-height:46px;font-size:13px;gap:6px}
+.menu-grid .button svg{width:16px;height:16px}
 
 /* Dificuldade: botão único que expande as opções */
 .menu-difficulty-wrap{display:flex;flex-direction:column;gap:8px;width:100%}
