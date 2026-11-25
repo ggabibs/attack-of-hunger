@@ -338,16 +338,20 @@ test('phase names advance every 25 humans and stay capped', () => {
 });
 
 test('achievements unlock from pure match stats', () => {
-  assert.equal(ACHIEVEMENTS.length, 8);
+  assert.equal(ACHIEVEMENTS.length, 12);
   const ids = (extra) => ACHIEVEMENTS.filter(a => a.test({ score: 0, combo: 0, level: 1, elapsed: 0, ...extra })).map(a => a.id);
   assert.deepEqual(ids({}), []);
   assert.ok(ids({ score: 1 }).includes('first-bite'));
   assert.ok(ids({ score: 25 }).includes('moderate-hunger'));
   assert.ok(ids({ score: 200 }).includes('feast'));
+  assert.ok(ids({ score: 500 }).includes('score-500'));
   assert.ok(ids({ combo: 10 }).includes('combo-ten'));
   assert.ok(ids({ combo: 20 }).includes('combo-twenty'));
+  assert.ok(ids({ combo: 30 }).includes('combo-thirty'));
   assert.ok(ids({ elapsed: 180 }).includes('survivor'));
-  assert.equal(ids({ score: 200, combo: 20, level: 21, elapsed: 200 }).length, 8);
+  assert.ok(ids({ elapsed: 300 }).includes('survivor-legend'));
+  assert.ok(ids({ level: 6 }).includes('phase-max'));
+  assert.equal(ids({ score: 500, combo: 30, level: 6, elapsed: 300 }).length, 12);
 });
 
 test('restart resets the combo and difficulty keeps the match fair', () => {

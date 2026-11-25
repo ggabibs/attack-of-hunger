@@ -136,6 +136,17 @@
     height: id === 'colossal' ? 150 : id === 'beast' ? 116 : id === 'armored' ? 120 : 122
   }));
 
+  // Scenery palettes per phase (matches PHASES order). Each entry recolors the
+  // sky, sun/moon, clouds, ground and path, and optionally overlays ambiance.
+  const PHASE_PALETTES = [
+    { skyTop: '#bfd9c9', skyMid: '#e0e5bf', skyBottom: '#f1e6bc', sun: '#f9efc9', sunGlow: '#f9efc94d', cloud: '#f8f3d9a0', groundTop: '#afbd85', groundBottom: '#839f67', path: '#d5c59a', pathStroke: '#c1b58a', overlay: null, night: false },
+    { skyTop: '#f2d6a8', skyMid: '#f7e3c2', skyBottom: '#fbe9cf', sun: '#ffd98a', sunGlow: '#ffd98a55', cloud: '#fff0d0a0', groundTop: '#b3a878', groundBottom: '#7d8f5c', path: '#d8c8a0', pathStroke: '#c4b68a', overlay: 'rgba(120,70,20,.10)', night: false },
+    { skyTop: '#e8a878', skyMid: '#dd8a6a', skyBottom: '#b56a52', sun: '#ff9a5a', sunGlow: '#ff9a5a55', cloud: '#ffd9b8a0', groundTop: '#9a8a68', groundBottom: '#6a6248', path: '#c8b890', pathStroke: '#b4a47c', overlay: 'rgba(60,30,15,.22)', night: false },
+    { skyTop: '#3a4a6a', skyMid: '#2a3a5a', skyBottom: '#1a2742', sun: '#f0f0e0', sunGlow: '#f0f0e044', cloud: '#ffffff18', groundTop: '#5a6a7a', groundBottom: '#3a4a5a', path: '#9a9a8a', pathStroke: '#888878', overlay: 'rgba(10,15,35,.30)', night: true },
+    { skyTop: '#4a2a3a', skyMid: '#3a1a2a', skyBottom: '#2a1018', sun: '#e0a0a0', sunGlow: '#e0a0a044', cloud: '#e0c0c018', groundTop: '#6a4a4a', groundBottom: '#4a2a2a', path: '#a0807a', pathStroke: '#8a7068', overlay: 'rgba(30,10,15,.38)', night: true },
+    { skyTop: '#3a1a1a', skyMid: '#2a1010', skyBottom: '#1a0808', sun: '#c04030', sunGlow: '#c0403044', cloud: '#c0806014', groundTop: '#5a2a2a', groundBottom: '#3a1515', path: '#8a5a50', pathStroke: '#7a4a42', overlay: 'rgba(20,5,5,.45)', night: true }
+  ];
+
   function drawTargetBadge(ctx, x, y, scale) {
     ellipse(ctx, x, y, 8 * scale, 8 * scale, '#fff4d5', '#4e7147', 1.4 * scale);
     line(ctx, [[x - 3 * scale, y], [x + 3 * scale, y]], '#42663d', 1.8 * scale);
@@ -452,6 +463,14 @@
       this.particleCursor = 0;
       this.labelCursor = 0;
       this.playerTitan = null;
+      this.phaseIndex = 0;
+    }
+
+    repaintBackground(phaseIndex) {
+      this.phaseIndex = phaseIndex;
+      const ctx = this.background.getContext('2d', { alpha: false });
+      ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
+      this.paintBackground(ctx, this.phaseIndex);
     }
 
     resize(width, height) {
@@ -465,13 +484,12 @@
       this.scale = this.canvas.width / this.width;
       this.background.width = this.canvas.width;
       this.background.height = this.canvas.height;
-      const ctx = this.background.getContext('2d', { alpha: false });
-      ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
-      this.paintBackground(ctx);
+      this.repaintBackground(this.phaseIndex);
       return { width: this.width, height: this.height };
     }
 
-    paintBackground(ctx) {
+    paintBackground(ctx, phaseIndex = 0) {
+      const palette = PHASE_PALETTES[phaseIndex] || PHASE_PALETTES[0];
       const w = this.width;
       const h = this.height;
       const random = seededRandom(7219);
@@ -479,20 +497,30 @@
       const wallHeight = Math.max(76, h * 0.135);
       const wallBottom = wallTop + wallHeight;
       const sky = ctx.createLinearGradient(0, 0, 0, wallBottom);
-      sky.addColorStop(0, '#bfd9c9');
-      sky.addColorStop(0.65, '#e0e5bf');
-      sky.addColorStop(1, '#f1e6bc');
+      sky.addColorStop(0, palette.skyTop);
+      sky.addColorStop(0.65, palette.skyMid);
+      sky.addColorStop(1, palette.skyBottom);
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, w, h);
-      ellipse(ctx, w * 0.79, h * 0.205, 58, 58, '#f9efc9');
-      ellipse(ctx, w * 0.79, h * 0.205, 69, 69, null, '#f9efc94d', 1);
+      if (palette.night) {
+        // Stars for the night phases.
+        for (let i = 0; i < 60; i++) {
+          const sx = random() * w;
+          const sy = random() * wallTop * 0.85;
+          const r = 0.6 + random() * 1.4;
+          ctx.fillStyle = 'rgba(255,255,255,' + (0.35 + random() * 0.5) + ')';
+          ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fill();
+        }
+      }
+      ellipse(ctx, w * 0.79, h * 0.205, 58, 58, palette.sun);
+      ellipse(ctx, w * 0.79, h * 0.205, 69, 69, null, palette.sunGlow, 1);
       // Soft, illustrated clouds rather than image assets.
       const clouds = [[0.08,0.16,0.8],[0.88,0.30,0.7],[0.25,0.31,0.55],[0.62,0.075,0.6]];
       for (const [cx,cy,s] of clouds) {
         ctx.save();
         ctx.translate(w * cx, h * cy);
         ctx.scale(s, s);
-        ctx.fillStyle = '#f8f3d9a0';
+        ctx.fillStyle = palette.cloud;
         ctx.beginPath();
         ctx.moveTo(-58, 9);
         ctx.bezierCurveTo(-64,-2,-46,-12,-31,-8);
@@ -596,8 +624,8 @@
       }
       const groundY = wallBottom + 37;
       const ground = ctx.createLinearGradient(0, groundY, 0, h);
-      ground.addColorStop(0, '#afbd85');
-      ground.addColorStop(1, '#839f67');
+      ground.addColorStop(0, palette.groundTop);
+      ground.addColorStop(1, palette.groundBottom);
       ctx.fillStyle = ground;
       ctx.beginPath();
       ctx.moveTo(0, groundY + 6);
@@ -611,9 +639,9 @@
       ctx.lineTo(w*.84,h);
       ctx.bezierCurveTo(w*.76,h*.82,w/2+38,groundY+70,w/2+24,groundY);
       ctx.closePath();
-      ctx.fillStyle = '#d5c59a';
+      ctx.fillStyle = palette.path;
       ctx.fill();
-      ctx.strokeStyle = '#c1b58a';
+      ctx.strokeStyle = palette.pathStroke;
       ctx.lineWidth = 3;
       ctx.stroke();
       ctx.beginPath();
@@ -663,6 +691,11 @@
       for (const [bx,by] of [[w*.16,h*.235],[w*.19,h*.22],[w*.72,h*.33]]) {
         line(ctx, [[bx-4,by],[bx,by+2],[bx+4,by]], '#66866b88', 1.2);
       }
+      // Phase ambiance overlay (dusk/night/famine tint).
+      if (palette.overlay) {
+        ctx.fillStyle = palette.overlay;
+        ctx.fillRect(0, 0, w, h);
+      }
     }
 
     clearEffects() {
@@ -707,6 +740,7 @@
       const ctx = this.ctx;
       const w = this.width;
       const h = this.height;
+      if (engine.phaseIndex !== this.phaseIndex) this.repaintBackground(engine.phaseIndex);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(this.background, 0, 0);
       ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
@@ -863,13 +897,24 @@
     if (!PLAYER_TITAN_IDS.includes(currentTitanId)) currentTitanId = 'original';
     engine.playerTitan = currentTitanId;
     scenery.playerTitan = TITAN_FRAMES[currentTitanId] || TITAN_FRAMES.original;
+    // Cumulative match statistics, persisted in localStorage.
+    const defaultStats = { totalHumans: 0, bestCombo: 0, playCount: 0, totalTime: 0, escapedHumans: 0, bestPhase: 1 };
+    let stats = Object.assign({}, defaultStats);
+    try {
+      const storedStats = JSON.parse(readStorage('stats', '{}'));
+      if (storedStats && typeof storedStats === 'object') {
+        stats = Object.assign({}, defaultStats, storedStats);
+      }
+    } catch (error) { stats = Object.assign({}, defaultStats); }
+    function saveStats() { writeStorage('stats', JSON.stringify(stats)); }
     const screens = {
       menu: document.getElementById('menu-screen'),
       help: document.getElementById('help-screen'),
       pause: document.getElementById('pause-screen'),
       over: document.getElementById('gameover-screen'),
       achievements: document.getElementById('achievements-screen'),
-      titan: document.getElementById('titan-select-screen')
+      titan: document.getElementById('titan-select-screen'),
+      stats: document.getElementById('stats-screen')
     };
     const hud = document.getElementById('game-hud');
     const controls = document.getElementById('play-controls');
@@ -931,6 +976,7 @@
           : name === 'help' ? screens.help.querySelector('[data-action="close-help"]')
           : name === 'achievements' ? screens.achievements.querySelector('[data-action="close-achievements"]')
           : name === 'titan' ? screens.titan.querySelector('[data-action="close-titan"]')
+          : name === 'stats' ? screens.stats.querySelector('[data-action="close-stats"]')
           : name === 'pause' ? screens.pause.querySelector('[data-action="resume"]')
           : name === 'over' ? screens.over.querySelector('[data-action="restart"]') : stage;
         target.focus({ preventScroll: true });
@@ -1008,6 +1054,34 @@
           + '<div class="ach-text"><span class="ach-name">' + achievement.name + '</span>'
           + '<span class="ach-hint">' + achievement.hint + '</span></div>';
         achievementsGrid.appendChild(card);
+      }
+    }
+    function formatTime(seconds) {
+      const total = Math.max(0, Math.floor(seconds));
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      return m + 'm ' + String(s).padStart(2, '0') + 's';
+    }
+    function renderStats() {
+      const grid = document.getElementById('stats-grid');
+      if (!grid) return;
+      grid.textContent = '';
+      const cards = [
+        { label: 'HUMANOS TOTAL', value: String(stats.totalHumans), icon: '#i-swipe' },
+        { label: 'MELHOR CORRENTE', value: String(stats.bestCombo), icon: '#i-bolt' },
+        { label: 'MELHOR PONTUAÇÃO', value: String(best), icon: '#i-trophy' },
+        { label: 'PARTIDAS', value: String(stats.playCount), icon: '#i-play' },
+        { label: 'TEMPO TOTAL', value: formatTime(stats.totalTime), icon: '#i-info' },
+        { label: 'HUMANOS ESPARADOS', value: String(stats.escapedHumans), icon: '#i-arrow' },
+        { label: 'FASE MÁXIMA', value: String(stats.bestPhase), icon: '#i-titan' }
+      ];
+      for (const card of cards) {
+        const el = document.createElement('div');
+        el.className = 'stat-card';
+        el.innerHTML = '<span class="stat-icon" aria-hidden="true"><svg><use href="' + card.icon + '"/></svg></span>'
+          + '<span class="stat-value">' + card.value + '</span>'
+          + '<span class="stat-label">' + card.label + '</span>';
+        grid.appendChild(el);
       }
     }
     function drawTitanPreviews() {
@@ -1108,6 +1182,9 @@
     function closeAchievements() {
       showScreen('menu');
     }
+    function closeStats() {
+      showScreen('menu');
+    }
     function processEvents() {
       for (const event of engine.drainEvents()) {
         if (event.type === 'capture') {
@@ -1124,14 +1201,22 @@
             writeStorage('best', best);
             updateBest();
           }
+          stats.totalHumans += 1;
+          stats.bestCombo = Math.max(stats.bestCombo, engine.combo);
+          stats.bestPhase = Math.max(stats.bestPhase, engine.level);
           checkAchievements();
         }
         if (event.type === 'combo-reset') {
+          stats.escapedHumans += 1;
           updateHUD();
         }
         if (event.type === 'defeat') {
           clearInput();
           updateHUD();
+          stats.playCount += 1;
+          stats.totalTime += engine.elapsed;
+          stats.bestPhase = Math.max(stats.bestPhase, engine.level);
+          saveStats();
           const freshAchievements = checkAchievements();
           let announcement = 'Você comeu outro titã! Fim de jogo. ' + engine.score + ' humanos. Recorde: ' + best + '.';
           if (freshAchievements.length) {
@@ -1169,6 +1254,8 @@
       else if (action === 'close-help') closeHelp();
       else if (action === 'achievements') showScreen('achievements');
       else if (action === 'close-achievements') closeAchievements();
+      else if (action === 'stats') { renderStats(); showScreen('stats'); }
+      else if (action === 'close-stats') closeStats();
       else if (action === 'titan-select') { renderTitanCards(); showScreen('titan'); }
       else if (action === 'close-titan') goMenu();
       else if (action === 'difficulty') setDifficulty(button.dataset.difficulty);
@@ -1288,7 +1375,7 @@
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(stage);
     else window.addEventListener('resize', resize);
     resize();
-    updateBest(); updateSound(); updateDifficultyUI(); updateAchievementsUI(); renderTitanCards(); showScreen('menu', false);
+    updateBest(); updateSound(); updateDifficultyUI(); updateAchievementsUI(); renderStats(); renderTitanCards(); showScreen('menu', false);
 
     function paintLegend(id, kind) {
       const legend = document.getElementById(id);

@@ -198,6 +198,13 @@ kbd{font-family:var(--body);font-weight:800;display:inline-grid;place-items:cent
 .ach-text{display:flex;flex-direction:column;gap:2px;min-width:0}
 .ach-name{font-size:10px;font-weight:900;color:var(--forest);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ach-hint{font-size:8px;color:#6b7d52;line-height:1.4}
+.stats-dialog{max-width:400px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
+.stat-card{display:flex;flex-direction:column;align-items:center;gap:2px;background:#e9e8cc;border:1.5px solid #6b7b4930;border-radius:12px;padding:11px 8px 9px;text-align:center}
+.stat-icon{width:26px;height:26px;display:grid;place-items:center;border-radius:8px;background:var(--gold);color:var(--deep)}
+.stat-icon svg{width:16px;height:16px}
+.stat-value{font-family:var(--display);font-size:25px;font-weight:900;color:var(--forest);line-height:1.1}
+.stat-label{font-size:8px;font-weight:900;letter-spacing:.5px;color:#6b7d52;line-height:1.4}
 .stage-flash{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;background:#e36e43}
 .stage-flash.flash{animation:defeat-flash .45s ease-out}
 .game-stage.shake{animation:stage-shake .32s ease-out}
