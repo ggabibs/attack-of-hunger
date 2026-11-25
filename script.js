@@ -129,6 +129,12 @@
     original: '#86a16c', cinza: '#9aa4ad', carmesim: '#9a1b1b',
     laranja: '#d9741f', beast: '#8a5a2e', armored: '#5a6470'
   };
+  // Rival spawn rendering: variant index (see game.js PLAYER_TITAN_IDS) → frame + height.
+  const RIVAL_VARIANTS = PLAYER_TITAN_IDS.map((id, i) => ({
+    id,
+    name: TITAN_FRAMES[id].idle,
+    height: id === 'beast' ? 116 : id === 'armored' ? 120 : 122
+  }));
 
   function drawTargetBadge(ctx, x, y, scale) {
     ellipse(ctx, x, y, 8 * scale, 8 * scale, '#fff4d5', '#4e7147', 1.4 * scale);
@@ -202,11 +208,11 @@
   }
 
   function drawEnemy(ctx, x, y, time = 0, scale = 1, badge = true, variant = 0) {
-    const index = ((Math.floor(variant) % 2) + 2) % 2;
-    const name = index === 0 ? 'rival_beast' : 'rival_armored';
+    const entry = RIVAL_VARIANTS[((Math.floor(variant) % RIVAL_VARIANTS.length) + RIVAL_VARIANTS.length) % RIVAL_VARIANTS.length];
+    const name = entry.name;
     const frame = spriteBank.frame(name);
     if (frame) {
-      const height = (index === 0 ? 116 : 120) * scale;
+      const height = entry.height * scale;
       const width = height * frame.w / frame.h;
       ctx.save();
       ctx.translate(x, y);

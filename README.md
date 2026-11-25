@@ -16,7 +16,7 @@ Feito com **HTML5, CSS3, JavaScript puro e Canvas 2D**. Sem backend, sem banco d
 - **Objetivo:** cada humano vale **1 ponto**. Humanos perdidos não tiram pontos, mas quebram a corrente. Outro titã encerra a partida imediatamente.
 - **Corrente (combo):** coma humanos em sequência, sem deixar nenhum escapar. A cada 5 capturas a pontuação dobra, até **X5**; o valor ganho aparece como pontuação flutuante no local da captura.
 - **Fases:** a cada 25 humanos o HUD mostra a fase atual (de *LANCHE LIGHT* até *FOME SEM FIM*).
-- **Titã jogável:** botão **Escolha seu personagem** no menu, que abre uma tela com todos os titãs — *Original*, *Cinza*, *Carmesim*, *Laranja*, *Bestial* e *Blindado* — cada um com uma pré-visualização do sprite. A escolha fica salva no navegador e o titã escolhido **nunca** cai como alvo comestível (os rivais restantes continuam caindo).
+- **Titã jogável:** botão compacto **Escolha seu personagem** no menu, que abre uma tela com todos os titãs — *Original*, *Cinza*, *Carmesim*, *Laranja*, *Bestial* e *Blindado* — cada um com uma pré-visualização do sprite. A escolha fica salva no navegador e o titã escolhido **nunca** cai como alvo comestível. **Todos os titãs são rivais**: qualquer um dos 6 pode cair como titã comestível (exceto o escolhido para jogar).
 - **Densidade por tempo:** o ritmo da partida sobe com a duração — quanto mais o jogo durar, caem **mais humanos e mais titãs** no mesmo intervalo, independente da pontuação (a dificuldade define o piso de justiça das ondas).
 - **Conquistas:** 8 metas colecionáveis (pontuação, corrente e tempo) aparecem no menu e no ícone de recorde, com uma tela dedicada. Fica tudo salvo no navegador.
 - **Elenco:** o titã de olhos verdes é o jogador; Bestial e Blindado são rivais; há 7 variações de humanos sorteadas como alvos.
@@ -118,7 +118,7 @@ Durante o desenvolvimento também foi validado em Chromium com simulação mobil
 - **Fases:** array `PHASES` em `game.js` (uma fase a cada 25 pontos).
 - **Titã jogável:** `PLAYER_TITAN_IDS` e o método `setPlayerTitan()` em `game.js`; mapeamento dos frames (`TITAN_FRAMES`), tela de seleção com cartões (`renderTitanCards` + `drawTitanPreview`) e persistência em `script.js`; o titã escolhido é excluído das spawns (rivais) em `spawn()`.
 - **Conquistas:** array `ACHIEVEMENTS` em `game.js` (metas testáveis via `engine.stats`); UI e persistência em `script.js`.
-- **Arte dos personagens:** atlas `assets/sprites.png` + frames em `assets/sprites.js` (jogador original, rivais, humanos) e o atlas secundário `assets/titans.png` + frames em `assets/titans.js` (titãs jogáveis Cinza, Carmesim e Laranja); wrappers `drawPlayer`, `drawHuman` e `drawEnemy` em `script.js`.
+- **Arte dos personagens:** atlas `assets/sprites.png` + frames em `assets/sprites.js` (jogador original, humanos) e o atlas secundário `assets/titans.png` + frames em `assets/titans.js` (Cinza, Carmesim, Laranja); todos os 6 titãs são renderizados como rivais em `drawEnemy` (via `RIVAL_VARIANTS`), e wrappers `drawPlayer`, `drawHuman` em `script.js`.
 - **Cenário:** `Scenery.paintBackground()` em `script.js` (cacheado em um canvas offscreen e redesenhado apenas no resize).
 - **Sons:** `SoundBank.play()` em `script.js`.
 - **Textos/telas:** `index.html`.

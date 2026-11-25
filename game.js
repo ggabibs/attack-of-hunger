@@ -196,13 +196,13 @@
       entity.kind = kind;
       entity.x = this.laneX(clamp(lane, 0, this.laneCount - 1));
       entity.y = -48;
-      // Seven human sprites; two rival titans (Bestial = 0, Blindado = 1).
-      // The chosen playable titan never spawns as an edible rival.
+      // Seven human sprites; every titan can spawn as a rival (edible).
+      // Rival variant = index in PLAYER_TITAN_IDS; the chosen playable titan is excluded.
       if (kind === 'human') {
         entity.variant = Math.floor(this.random() * 7);
       } else {
-        const chosen = this.playerTitan === 'beast' ? 0 : this.playerTitan === 'armored' ? 1 : null;
-        const options = chosen === null ? [0, 1] : [chosen === 0 ? 1 : 0];
+        const options = PLAYER_TITAN_IDS.map((id, i) => i)
+          .filter(i => PLAYER_TITAN_IDS[i] !== this.playerTitan);
         entity.variant = options[Math.floor(this.random() * options.length)];
       }
       entity.variant = clamp(entity.variant, 0, 6);
