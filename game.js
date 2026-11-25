@@ -36,7 +36,7 @@
 
   // Selectable playable titans. script.js maps each id to sprite frame names.
   // The chosen titan is excluded from rival spawns (never falls as food).
-  const PLAYER_TITAN_IDS = ['original', 'cinza', 'carmesim', 'laranja', 'beast', 'armored'];
+  const PLAYER_TITAN_IDS = ['original', 'cinza', 'laranja', 'beast', 'armored', 'colossal'];
 
   // Swept collision in ellipse space: a fast target cannot skip the player.
   function segmentHitsEllipse(ax, ay, bx, by, rx, ry) {

@@ -112,28 +112,28 @@
   const TITAN_FRAMES = {
     original: { idle: 'player_idle', eat: 'player_eat' },
     cinza: { idle: 'titan_cinza_idle', eat: 'titan_cinza_eat' },
-    carmesim: { idle: 'titan_carmesim_idle', eat: 'titan_carmesim_eat' },
     laranja: { idle: 'titan_laranja_idle', eat: 'titan_laranja_eat' },
     beast: { idle: 'rival_beast', eat: 'rival_beast' },
-    armored: { idle: 'rival_armored', eat: 'rival_armored' }
+    armored: { idle: 'rival_armored', eat: 'rival_armored' },
+    colossal: { idle: 'titan_colossal_idle', eat: 'titan_colossal_eat' }
   };
   const TITAN_CHOICES = [
-    { id: 'original', name: 'Titã Original' },
-    { id: 'cinza', name: 'Titã Cinza' },
-    { id: 'carmesim', name: 'Titã Carmesim' },
-    { id: 'laranja', name: 'Titã Laranja' },
+    { id: 'original', name: 'Titã Eren' },
+    { id: 'cinza', name: 'Titã Martelo de Guerra' },
+    { id: 'laranja', name: 'Titã Fêmea' },
     { id: 'beast', name: 'Titã Bestial' },
-    { id: 'armored', name: 'Titã Blindado' }
+    { id: 'armored', name: 'Titã Blindado' },
+    { id: 'colossal', name: 'Titã Colossal' }
   ];
   const TITAN_SWATCHES = {
-    original: '#86a16c', cinza: '#9aa4ad', carmesim: '#9a1b1b',
-    laranja: '#d9741f', beast: '#8a5a2e', armored: '#5a6470'
+    original: '#86a16c', cinza: '#9aa4ad', laranja: '#d9741f',
+    beast: '#8a5a2e', armored: '#5a6470', colossal: '#a02020'
   };
   // Rival spawn rendering: variant index (see game.js PLAYER_TITAN_IDS) → frame + height.
   const RIVAL_VARIANTS = PLAYER_TITAN_IDS.map((id, i) => ({
     id,
     name: TITAN_FRAMES[id].idle,
-    height: id === 'beast' ? 116 : id === 'armored' ? 120 : 122
+    height: id === 'colossal' ? 150 : id === 'beast' ? 116 : id === 'armored' ? 120 : 122
   }));
 
   function drawTargetBadge(ctx, x, y, scale) {
