@@ -72,14 +72,18 @@ svg{width:24px;height:24px;display:block;flex-shrink:0}
 .menu-record svg{width:14px;height:14px;color:#957030}
 .menu-record strong{font-family:var(--display);font-size:18px;line-height:1;color:var(--forest);margin-left:3px;letter-spacing:0}
 .menu-record .ach-count{display:flex;align-items:center;gap:4px;font-size:7px;font-weight:800;color:#6b7d52;margin-left:7px;padding-left:8px;border-left:1px solid #52684426;letter-spacing:.5px}
-.menu-titan{display:flex;flex-direction:column;align-items:center;gap:7px;margin-top:13px;width:100%;padding:0 12px}
-.menu-titan .small-eyebrow{color:#36503a;font-size:8px;letter-spacing:1.4px}
-.titan-row{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
-.titan-button{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:78px;padding:7px 5px 6px;border-radius:12px;background:#fff4dce8;border:1.5px solid #3e573c80;color:var(--forest);font-size:8px;font-weight:800;line-height:1.2;transition:background .15s,border-color .15s,transform .1s}
-.titan-button:active{transform:translateY(2px)}
-.titan-button.is-active{background:#fff7e0;border-color:var(--gold);box-shadow:0 0 0 2px #f4bd5955}
-.titan-swatch{width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 2px #ffffff80}
-.titan-name{white-space:nowrap;max-width:78px;overflow:hidden;text-overflow:ellipsis}
+.titan-select-button{margin-top:13px;width:100%;justify-content:center;gap:7px;flex-wrap:wrap}
+.titan-select-current{font-size:7px;font-weight:800;color:#6b7d52;letter-spacing:.5px;padding-left:6px;border-left:1px solid #52684426}
+.titan-select-dialog p b{color:var(--gold-dark,#8a5a1e)}
+.titan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;width:100%;max-width:440px}
+.titan-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 6px 8px;border-radius:14px;background:#fff4dce8;border:1.5px solid #3e573c80;color:var(--forest);transition:background .15s,border-color .15s,transform .1s}
+.titan-card:active{transform:translateY(2px)}
+.titan-card.is-active{background:#fff7e0;border-color:var(--gold);box-shadow:0 0 0 2px #f4bd5955}
+.titan-preview{width:100%;height:120px;display:flex;align-items:flex-end;justify-content:center;background:radial-gradient(ellipse at 50% 100%,#3e573c26,transparent 72%);border-radius:10px}
+.titan-preview canvas{width:100%;height:auto;display:block}
+.titan-card-name{font-size:9px;font-weight:800;text-align:center;line-height:1.2;letter-spacing:.3px}
+.titan-card-badge{font-size:7px;font-weight:900;letter-spacing:.8px;color:#8a5a1e;background:#ffe9b0;border:1px solid #f4bd59;border-radius:20px;padding:2px 9px}
+@media (min-width:560px){.titan-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .menu-actions{position:absolute;bottom:19px;left:32px;right:32px;display:flex;flex-direction:column;gap:10px;align-items:stretch}
 .menu-row{display:flex;gap:10px}
 .menu-row .button{flex:1}

@@ -108,20 +108,27 @@
 
   const spriteBank = new SpriteBank([window.HungerSprites, window.HungerTitans]);
 
-  // Selectable playable titans: each id maps to its atlas frame names.
+  // Selectable playable titans: each id maps to its sprite frame names.
   const TITAN_FRAMES = {
     original: { idle: 'player_idle', eat: 'player_eat' },
     cinza: { idle: 'titan_cinza_idle', eat: 'titan_cinza_eat' },
     carmesim: { idle: 'titan_carmesim_idle', eat: 'titan_carmesim_eat' },
-    laranja: { idle: 'titan_laranja_idle', eat: 'titan_laranja_eat' }
+    laranja: { idle: 'titan_laranja_idle', eat: 'titan_laranja_eat' },
+    beast: { idle: 'rival_beast', eat: 'rival_beast' },
+    armored: { idle: 'rival_armored', eat: 'rival_armored' }
   };
   const TITAN_CHOICES = [
     { id: 'original', name: 'Titã Original' },
     { id: 'cinza', name: 'Titã Cinza' },
     { id: 'carmesim', name: 'Titã Carmesim' },
-    { id: 'laranja', name: 'Titã Laranja' }
+    { id: 'laranja', name: 'Titã Laranja' },
+    { id: 'beast', name: 'Titã Bestial' },
+    { id: 'armored', name: 'Titã Blindado' }
   ];
-  const TITAN_SWATCHES = { original: '#86a16c', cinza: '#9aa4ad', carmesim: '#9a1b1b', laranja: '#d9741f' };
+  const TITAN_SWATCHES = {
+    original: '#86a16c', cinza: '#9aa4ad', carmesim: '#9a1b1b',
+    laranja: '#d9741f', beast: '#8a5a2e', armored: '#5a6470'
+  };
 
   function drawTargetBadge(ctx, x, y, scale) {
     ellipse(ctx, x, y, 8 * scale, 8 * scale, '#fff4d5', '#4e7147', 1.4 * scale);
@@ -363,6 +370,66 @@
       line(ctx, [[-21,-80],[21,-80]], '#a89f78', 1);
       for (let tooth = -15; tooth <= 15; tooth += 6) line(ctx, [[tooth,-84],[tooth,-73]], '#a89f78', 1);
     }
+    ctx.restore();
+  }
+
+  // Draws a full-body titan sprite fitted inside a character-select card canvas.
+  const TITAN_PREVIEW_W = 120;
+  const TITAN_PREVIEW_H = 140;
+  function drawTitanPreview(canvas, titanId) {
+    if (!canvas) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    if (canvas.width !== Math.round(TITAN_PREVIEW_W * dpr) || canvas.height !== Math.round(TITAN_PREVIEW_H * dpr)) {
+      canvas.width = Math.round(TITAN_PREVIEW_W * dpr);
+      canvas.height = Math.round(TITAN_PREVIEW_H * dpr);
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, TITAN_PREVIEW_W, TITAN_PREVIEW_H);
+    const frame = spriteBank.frame((TITAN_FRAMES[titanId] || TITAN_FRAMES.original).idle);
+    if (!frame) {
+      drawTitanSilhouette(ctx, TITAN_PREVIEW_W, TITAN_PREVIEW_H, TITAN_SWATCHES[titanId] || '#86a16c');
+      return;
+    }
+    const pad = 6;
+    const scale = Math.min((TITAN_PREVIEW_W - pad * 2) / frame.w, (TITAN_PREVIEW_H - pad) / frame.h);
+    const width = frame.w * scale;
+    const height = frame.h * scale;
+    spriteBank.draw(ctx, (TITAN_FRAMES[titanId] || TITAN_FRAMES.original).idle,
+      (TITAN_PREVIEW_W - width) / 2, TITAN_PREVIEW_H - height - 4, width, height);
+  }
+
+  function drawTitanSilhouette(ctx, width, height, color) {
+    ctx.save();
+    ctx.translate(width / 2, height);
+    const s = Math.min(width, height) / 150;
+    ctx.fillStyle = color + '26';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, -135 * s, 22 * s, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-30 * s, -104 * s);
+    ctx.lineTo(-16 * s, -112 * s);
+    ctx.lineTo(16 * s, -112 * s);
+    ctx.lineTo(30 * s, -104 * s);
+    ctx.lineTo(24 * s, -52 * s);
+    ctx.lineTo(14 * s, -40 * s);
+    ctx.lineTo(-14 * s, -40 * s);
+    ctx.lineTo(-24 * s, -52 * s);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-18 * s, -52 * s);
+    ctx.lineTo(-12 * s, -8 * s);
+    ctx.lineTo(-6 * s, -52 * s);
+    ctx.moveTo(18 * s, -52 * s);
+    ctx.lineTo(12 * s, -8 * s);
+    ctx.lineTo(6 * s, -52 * s);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -795,7 +862,8 @@
       help: document.getElementById('help-screen'),
       pause: document.getElementById('pause-screen'),
       over: document.getElementById('gameover-screen'),
-      achievements: document.getElementById('achievements-screen')
+      achievements: document.getElementById('achievements-screen'),
+      titan: document.getElementById('titan-select-screen')
     };
     const hud = document.getElementById('game-hud');
     const controls = document.getElementById('play-controls');
@@ -856,6 +924,7 @@
         const target = name === 'menu' ? screens.menu.querySelector('[data-action="play"]')
           : name === 'help' ? screens.help.querySelector('[data-action="close-help"]')
           : name === 'achievements' ? screens.achievements.querySelector('[data-action="close-achievements"]')
+          : name === 'titan' ? screens.titan.querySelector('[data-action="close-titan"]')
           : name === 'pause' ? screens.pause.querySelector('[data-action="resume"]')
           : name === 'over' ? screens.over.querySelector('[data-action="restart"]') : stage;
         target.focus({ preventScroll: true });
@@ -935,19 +1004,44 @@
         achievementsGrid.appendChild(card);
       }
     }
-    function renderTitanChoice() {
-      const row = document.getElementById('titan-row');
-      if (!row) return;
-      row.textContent = '';
+    function drawTitanPreviews() {
+      for (const canvas of document.querySelectorAll('#titan-grid .titan-preview-canvas')) {
+        const card = canvas.closest('.titan-card');
+        if (card) drawTitanPreview(canvas, card.dataset.titan);
+      }
+    }
+    function renderTitanCards() {
+      const grid = document.getElementById('titan-grid');
+      if (!grid) return;
+      grid.textContent = '';
       for (const choice of TITAN_CHOICES) {
         const button = document.createElement('button');
-        button.className = 'titan-button' + (choice.id === currentTitanId ? ' is-active' : '');
+        button.className = 'titan-card' + (choice.id === currentTitanId ? ' is-active' : '');
         button.dataset.action = 'titan';
         button.dataset.titan = choice.id;
         button.setAttribute('aria-pressed', String(choice.id === currentTitanId));
-        button.title = 'Titã jogável: ' + choice.name;
-        button.innerHTML = '<span class="titan-swatch" style="background:' + TITAN_SWATCHES[choice.id] + '"></span><span class="titan-name">' + choice.name + '</span>';
-        row.appendChild(button);
+        button.title = choice.name;
+        const preview = document.createElement('span');
+        preview.className = 'titan-preview';
+        const canvas = document.createElement('canvas');
+        canvas.className = 'titan-preview-canvas';
+        preview.appendChild(canvas);
+        const name = document.createElement('span');
+        name.className = 'titan-card-name';
+        name.textContent = choice.name;
+        const badge = document.createElement('span');
+        badge.className = 'titan-card-badge';
+        badge.hidden = choice.id !== currentTitanId;
+        badge.textContent = 'EQUIPADO';
+        button.append(preview, name, badge);
+        grid.appendChild(button);
+        drawTitanPreview(canvas, choice.id);
+      }
+      if (!spriteBank.ready) spriteBank.onLoad = drawTitanPreviews;
+      const currentLabel = document.getElementById('titan-select-current');
+      if (currentLabel) {
+        const choice = TITAN_CHOICES.find(c => c.id === currentTitanId);
+        currentLabel.textContent = choice ? choice.name : '';
       }
     }
     function selectTitan(id) {
@@ -956,8 +1050,9 @@
       writeStorage('titan', id);
       engine.playerTitan = id;
       scenery.playerTitan = TITAN_FRAMES[id] || TITAN_FRAMES.original;
-      renderTitanChoice();
+      renderTitanCards();
       announcer.textContent = 'Titã jogável: ' + (TITAN_CHOICES.find(c => c.id === id) || {}).name;
+      showScreen('menu');
     }
     function startGame() {
       clearInput();
@@ -1068,6 +1163,8 @@
       else if (action === 'close-help') closeHelp();
       else if (action === 'achievements') showScreen('achievements');
       else if (action === 'close-achievements') closeAchievements();
+      else if (action === 'titan-select') { renderTitanCards(); showScreen('titan'); }
+      else if (action === 'close-titan') goMenu();
       else if (action === 'difficulty') setDifficulty(button.dataset.difficulty);
       else if (action === 'titan') selectTitan(button.dataset.titan);
       else if (action === 'sound') {
@@ -1185,7 +1282,7 @@
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(stage);
     else window.addEventListener('resize', resize);
     resize();
-    updateBest(); updateSound(); updateDifficultyUI(); updateAchievementsUI(); renderTitanChoice(); showScreen('menu', false);
+    updateBest(); updateSound(); updateDifficultyUI(); updateAchievementsUI(); renderTitanCards(); showScreen('menu', false);
 
     function paintLegend(id, kind) {
       const legend = document.getElementById(id);

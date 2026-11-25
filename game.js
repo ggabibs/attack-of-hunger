@@ -35,7 +35,8 @@
   ];
 
   // Selectable playable titans. script.js maps each id to sprite frame names.
-  const PLAYER_TITAN_IDS = ['original', 'cinza', 'carmesim', 'laranja'];
+  // The chosen titan is excluded from rival spawns (never falls as food).
+  const PLAYER_TITAN_IDS = ['original', 'cinza', 'carmesim', 'laranja', 'beast', 'armored'];
 
   // Swept collision in ellipse space: a fast target cannot skip the player.
   function segmentHitsEllipse(ax, ay, bx, by, rx, ry) {
@@ -195,8 +196,16 @@
       entity.kind = kind;
       entity.x = this.laneX(clamp(lane, 0, this.laneCount - 1));
       entity.y = -48;
-      // Seven human sprites; two rival titans (Beast / Armored).
-      entity.variant = clamp(Math.floor(this.random() * (kind === 'human' ? 7 : 2)), 0, kind === 'human' ? 6 : 1);
+      // Seven human sprites; two rival titans (Bestial = 0, Blindado = 1).
+      // The chosen playable titan never spawns as an edible rival.
+      if (kind === 'human') {
+        entity.variant = Math.floor(this.random() * 7);
+      } else {
+        const chosen = this.playerTitan === 'beast' ? 0 : this.playerTitan === 'armored' ? 1 : null;
+        const options = chosen === null ? [0, 1] : [chosen === 0 ? 1 : 0];
+        entity.variant = options[Math.floor(this.random() * options.length)];
+      }
+      entity.variant = clamp(entity.variant, 0, 6);
       entity.phase = this.random() * Math.PI * 2;
       this.entities.push(entity);
       this.lastLane = lane;
