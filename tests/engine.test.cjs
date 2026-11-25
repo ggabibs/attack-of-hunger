@@ -399,7 +399,7 @@ test('the time density ramp keeps a fair floor and resets on restart', () => {
 });
 
 test('the playable titan choice is selectable, validated and never an edible target', () => {
-  assert.deepEqual(PLAYER_TITAN_IDS, ['original', 'cinza', 'carmesim', 'laranja']);
+  assert.deepEqual(PLAYER_TITAN_IDS, ['original', 'cinza', 'carmesim', 'laranja', 'beast', 'armored']);
   const game = new HungerEngine();
   assert.equal(game.playerTitan, 'original', 'defaults to the original titan');
   game.setPlayerTitan('carmesim');
@@ -417,6 +417,51 @@ test('the playable titan choice is selectable, validated and never an edible tar
     assert.ok(entity.kind === 'human' || entity.kind === 'titan',
       'the playable titan never appears as an edible spawn');
   }
+});
+
+test('the chosen rival titan is excluded from edible spawns, the other remains', () => {
+  // Rival titans spawn as variant 0 (beast) / 1 (armored). Choosing one as the
+  // playable titan removes it from the menu of edible rivals.
+  const beastGame = new HungerEngine({ random: seeded(3) });
+  beastGame.start();
+  beastGame.setPlayerTitan('beast');
+  const beastVariants = new Set();
+  for (let i = 0; i < 500; i++) {
+    beastGame.spawn();
+    const entity = beastGame.entities[beastGame.entities.length - 1];
+    if (entity.kind === 'titan') beastVariants.add(entity.variant);
+    beastGame.entities.length = 0;
+  }
+  assert.ok(beastVariants.size > 0, 'rival titans still spawn when beast is chosen');
+  assert.ok(!beastVariants.has(0), 'the chosen beast titan never spawns as food');
+  assert.ok(beastVariants.has(1), 'the armored titan still falls as food');
+
+  const armoredGame = new HungerEngine({ random: seeded(4) });
+  armoredGame.start();
+  armoredGame.setPlayerTitan('armored');
+  const armoredVariants = new Set();
+  for (let i = 0; i < 500; i++) {
+    armoredGame.spawn();
+    const entity = armoredGame.entities[armoredGame.entities.length - 1];
+    if (entity.kind === 'titan') armoredVariants.add(entity.variant);
+    armoredGame.entities.length = 0;
+  }
+  assert.ok(armoredVariants.size > 0, 'rival titans still spawn when armored is chosen');
+  assert.ok(!armoredVariants.has(1), 'the chosen armored titan never spawns as food');
+  assert.ok(armoredVariants.has(0), 'the beast titan still falls as food');
+
+  // With a non-rival titan chosen, both rivals keep falling.
+  const bothGame = new HungerEngine({ random: seeded(5) });
+  bothGame.start();
+  bothGame.setPlayerTitan('cinza');
+  const bothVariants = new Set();
+  for (let i = 0; i < 500; i++) {
+    bothGame.spawn();
+    const entity = bothGame.entities[bothGame.entities.length - 1];
+    if (entity.kind === 'titan') bothVariants.add(entity.variant);
+    bothGame.entities.length = 0;
+  }
+  assert.ok(bothVariants.has(0) && bothVariants.has(1), 'both rivals fall when a non-rival is chosen');
 });
 
 test('the playable titan choice survives restarts', () => {
