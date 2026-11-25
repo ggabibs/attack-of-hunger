@@ -1019,6 +1019,18 @@
       updateDifficultyUI();
       announcer.textContent = 'Dificuldade definida: ' + value;
     }
+    function toggleDifficulty() {
+      const panel = document.getElementById('difficulty-options');
+      const toggle = document.querySelector('[data-action="difficulty-toggle"]');
+      if (!panel) return;
+      const willOpen = panel.hidden;
+      panel.hidden = !willOpen;
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', String(willOpen));
+        const arrow = toggle.querySelector('.toggle-arrow');
+        if (arrow) arrow.classList.toggle('is-flipped', willOpen);
+      }
+    }
     function saveAchievements() {
       writeStorage('achievements', JSON.stringify(Array.from(unlockedAchievements)));
     }
@@ -1258,7 +1270,8 @@
       else if (action === 'close-stats') closeStats();
       else if (action === 'titan-select') { renderTitanCards(); showScreen('titan'); }
       else if (action === 'close-titan') goMenu();
-      else if (action === 'difficulty') setDifficulty(button.dataset.difficulty);
+      else if (action === 'difficulty-toggle') toggleDifficulty();
+      else if (action === 'difficulty') { setDifficulty(button.dataset.difficulty); }
       else if (action === 'titan') selectTitan(button.dataset.titan);
       else if (action === 'sound') {
         sound.setEnabled(!sound.enabled);
