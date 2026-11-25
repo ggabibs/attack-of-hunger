@@ -75,6 +75,7 @@
         </div>
 
         <div class="screen menu-screen" id="menu-screen">
+          <button class="menu-help-button icon-button" data-action="help" aria-label="Como jogar"><svg aria-hidden="true"><use href="#i-question"/></svg></button>
           <div class="menu-heading">
             <span class="game-eyebrow">PEQUENOS HUMANOS. GRANDE FOME.</span>
             <h1><span class="title-attack">ATTACK</span><span class="title-of"><i></i> OF <i></i></span><span class="title-hunger">HUNGER</span></h1>
@@ -84,18 +85,15 @@
           <div class="menu-actions">
             <button class="button button-primary play-button" data-action="play"><svg aria-hidden="true"><use href="#i-play"/></svg> JOGAR <svg class="button-arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
             <div class="menu-grid">
-              <button class="button button-secondary" data-action="help"><svg aria-hidden="true"><use href="#i-info"/></svg> COMO JOGAR</button>
               <button class="button button-secondary" data-action="stats"><svg aria-hidden="true"><use href="#i-chart"/></svg> ESTATÍSTICAS</button>
               <button class="button button-secondary" data-action="titan-select"><svg aria-hidden="true"><use href="#i-titan"/></svg> PERSONAGEM</button>
               <button class="button button-secondary" data-action="achievements"><svg aria-hidden="true"><use href="#i-trophy"/></svg> CONQUISTAS</button>
-            </div>
-            <div class="menu-difficulty-wrap">
               <button class="button button-secondary difficulty-toggle" data-action="difficulty-toggle" aria-expanded="false" aria-controls="difficulty-options"><svg aria-hidden="true"><use href="#i-bolt"/></svg> DIFEICULDADE <svg class="toggle-arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
-              <div class="difficulty-options" id="difficulty-options" hidden role="group" aria-label="Selecionar dificuldade">
-                <button class="diff-button" data-action="difficulty" data-difficulty="easy" aria-pressed="false">FÁCIL</button>
-                <button class="diff-button is-active" data-action="difficulty" data-difficulty="normal" aria-pressed="true">NORMAL</button>
-                <button class="diff-button" data-action="difficulty" data-difficulty="hard" aria-pressed="false">DIFÍCIL</button>
-              </div>
+            </div>
+            <div class="difficulty-options" id="difficulty-options" hidden role="group" aria-label="Selecionar dificuldade">
+              <button class="diff-button" data-action="difficulty" data-difficulty="easy" aria-pressed="false">FÁCIL</button>
+              <button class="diff-button is-active" data-action="difficulty" data-difficulty="normal" aria-pressed="true">NORMAL</button>
+              <button class="diff-button" data-action="difficulty" data-difficulty="hard" aria-pressed="false">DIFÍCIL</button>
             </div>
             <button class="menu-sound" data-action="sound" aria-pressed="true"><svg aria-hidden="true"><use href="#i-sound"/></svg><span data-sound-label>Som ativado</span><span class="sound-switch" aria-hidden="true"><i></i></span></button>
           </div>
