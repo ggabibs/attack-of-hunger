@@ -86,11 +86,26 @@ svg{width:24px;height:24px;display:block;flex-shrink:0}
 .titan-card-badge{font-size:7px;font-weight:900;letter-spacing:.8px;color:#8a5a1e;background:#ffe9b0;border:1px solid #f4bd59;border-radius:20px;padding:2px 9px}
 @media (min-width:560px){.titan-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .menu-actions{position:absolute;bottom:19px;left:32px;right:32px;display:flex;flex-direction:column;gap:10px;align-items:stretch}
-.menu-row{display:flex;gap:10px}
-.menu-row .button{flex:1}
-.menu-difficulty{display:flex;align-items:center;gap:6px;background:#fff4dce8;border:1.5px solid #3e573c;border-radius:14px;padding:5px 6px;font-size:8px;font-weight:900;letter-spacing:.8px;color:#4b6041}
 .diff-button{flex:1;min-height:36px;border-radius:10px;font-family:var(--display);font-size:13px;font-weight:800;letter-spacing:.5px;background:transparent;color:#4b6041;border:1.5px solid transparent;transition:background .15s,color .15s,box-shadow .15s}
 .diff-button.is-active{background:var(--gold);color:var(--deep);border-color:var(--deep);box-shadow:0 2px 0 var(--deep)}
+
+/* Botão de ajuda (?) no canto superior */
+.menu-help-button{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:10px;background:#fff4dce8;border:1.5px solid #3e573c;color:#4b6041;box-shadow:0 2px 0 #3e573c}
+.menu-help-button svg{width:18px;height:18px}
+.menu-help-button:hover{background:#fff4dcf2}
+
+/* Grade de botões abaixo de JOGAR */
+.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;width:100%}
+.menu-grid .button{width:100%;min-height:40px;font-size:13px}
+
+/* Dificuldade: botão único que expande as opções */
+.menu-difficulty-wrap{display:flex;flex-direction:column;gap:8px;width:100%}
+.difficulty-toggle{width:100%;justify-content:center;gap:7px;min-height:40px;font-size:13px}
+.difficulty-toggle svg:first-child{width:15px;height:15px}
+.toggle-arrow{width:14px;height:14px;transition:transform .2s}
+.toggle-arrow.is-flipped{transform:rotate(90deg)}
+.difficulty-options{display:flex;gap:8px}
+.difficulty-options .diff-button{min-height:40px;font-size:13px}
 .button{min-height:48px;width:100%;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--display);font-size:20px;font-weight:800;letter-spacing:.8px;padding:10px 15px;transition:background .16s,box-shadow .16s,transform .16s;line-height:1.1}
 .button svg{width:20px;height:20px}
 .button-primary{background:var(--gold);color:var(--deep);border:2px solid var(--deep);box-shadow:0 4px 0 var(--deep)}
