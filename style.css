@@ -95,8 +95,9 @@ svg{width:24px;height:24px;display:block;flex-shrink:0}
 .menu-help-button:hover{background:#fff4dcf2}
 
 /* Grade de botões abaixo de JOGAR */
-.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;width:100%}
-.menu-grid .button{width:100%;min-height:40px;font-size:13px}
+.menu-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;width:100%}
+.menu-grid .button{width:100%;min-height:42px;font-size:12px;gap:5px}
+.menu-grid .button svg{width:15px;height:15px}
 
 /* Dificuldade: botão único que expande as opções */
 .menu-difficulty-wrap{display:flex;flex-direction:column;gap:8px;width:100%}
