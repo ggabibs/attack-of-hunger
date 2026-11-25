@@ -8,41 +8,41 @@
   'use strict';
   return {
   "src": "./assets/titans.png",
-  "width": 1126,
-  "height": 1165,
+  "width": 927,
+  "height": 1108,
   "frames": {
     "titan_cinza_idle": {
       "x": 6,
       "y": 6,
-      "w": 436,
-      "h": 1153
+      "w": 237,
+      "h": 641
     },
     "titan_cinza_eat": {
       "x": 6,
       "y": 6,
-      "w": 436,
-      "h": 1153
+      "w": 237,
+      "h": 641
     },
     "titan_carmesim_idle": {
-      "x": 454,
+      "x": 255,
       "y": 6,
       "w": 315,
       "h": 1096
     },
     "titan_carmesim_eat": {
-      "x": 454,
+      "x": 255,
       "y": 6,
       "w": 315,
       "h": 1096
     },
     "titan_laranja_idle": {
-      "x": 781,
+      "x": 582,
       "y": 6,
       "w": 339,
       "h": 1081
     },
     "titan_laranja_eat": {
-      "x": 781,
+      "x": 582,
       "y": 6,
       "w": 339,
       "h": 1081
