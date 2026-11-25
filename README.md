@@ -13,14 +13,15 @@ Feito com **HTML5, CSS3, JavaScript puro e Canvas 2D**. Sem backend, sem banco d
 - **Pausar:** botão de pausa, `P` ou `Esc`. Com o foco na área do jogo, `Espaço` também pausa.
 - **Som:** botão de som no menu e no cabeçalho. A preferência fica salva no navegador.
 - **Dificuldade:** no menu, escolha **Fácil**, **Normal** ou **Difícil**. A dificuldade ajusta a velocidade de queda, a frequência das ondas e a densidade de titãs rivais. A escolha fica salva no navegador.
-- **Objetivo:** cada humano vale **1 ponto**. Humanos perdidos não tiram pontos, mas quebram a corrente. Às vezes passa um **banquete raro** (alvo especial, marcado com estrela dourada) valendo **+3** por multiplicação. Outro titã encerra a partida imediatamente.
+- **Objetivo:** cada humano vale **1 ponto**. Humanos perdidos não tiram pontos, mas quebram a corrente. Outro titã encerra a partida imediatamente.
 - **Corrente (combo):** coma humanos em sequência, sem deixar nenhum escapar. A cada 5 capturas a pontuação dobra, até **X5**; o valor ganho aparece como pontuação flutuante no local da captura.
 - **Fases:** a cada 25 humanos o HUD mostra a fase atual (de *LANCHE LIGHT* até *FOME SEM FIM*).
-- **Trajes do titã:** 5 aspectos (de *Titã Padrão* a *Titã da Fome*) que mudam a cor e o aura do jogador. Liberam conforme o **recorde** (50, 100, 150, 200 humanos) e podem ser equipados no menu; a escolha fica salva.
-- **Conquistas:** 9 metas colecionáveis (pontuação, corrente, banquetes e tempo) aparecem no menu e no ícone de recorde, com uma tela dedicada. Fica tudo salvo no navegador.
+- **Titã jogável:** escolha o titã que você controla no menu (*Original*, *Cinza*, *Carmesim* ou *Laranja*). A escolha fica salva no navegador, e o titã escolhido **nunca** cai como alvo comestível.
+- **Densidade por tempo:** o ritmo da partida sobe com a duração — quanto mais o jogo durar, caem **mais humanos e mais titãs** no mesmo intervalo, independente da pontuação (a dificuldade define o piso de justiça das ondas).
+- **Conquistas:** 8 metas colecionáveis (pontuação, corrente e tempo) aparecem no menu e no ícone de recorde, com uma tela dedicada. Fica tudo salvo no navegador.
 - **Elenco:** o titã de olhos verdes é o jogador; Bestial e Blindado são rivais; há 7 variações de humanos sorteadas como alvos.
 
-A velocidade dos itens que caem aumenta gradualmente com a pontuação **e também com o tempo de partida** (mesmo se você não pontuar). A frequência das ondas aumenta com a pontuação. As ondas são espaçadas e sempre deixam uma rota de desvio possível. O recorde é salvo automaticamente no `localStorage` do navegador.
+A velocidade dos itens que caem aumenta gradualmente com a pontuação **e também com o tempo de partida** (mesmo se você não pontuar). A frequência das ondas aumenta com a pontuação **e com o tempo de partida**, e a densidade de titãs rivais também cresce conforme a partida se estende. As ondas são espaçadas e sempre deixam uma rota de desvio possível. O recorde é salvo automaticamente no `localStorage` do navegador.
 
 O link do logo/cabeçalho abre o jogo em uma **nova aba** (`target="_blank"`). Observação: um site não consegue forçar abas externas que apontam para ele a abrir em nova aba; isso depende de quem cria o link de origem.
 
@@ -112,13 +113,12 @@ Durante o desenvolvimento também foi validado em Chromium com simulação mobil
 
 - **Cores e tipografia:** variáveis CSS em `:root` no `style.css`.
 - **Velocidade/dificuldade:** getters `fallSpeed`, `spawnInterval`, `level` e `difficulty` em `game.js`.
-- **Probabilidade de titãs e espaçamento:** método `spawn()` em `game.js`.
+- **Probabilidade de titãs, espaçamento e densidade por tempo:** método `spawn()` + getters `titanTimeDrift` e `spawnInterval` em `game.js`.
 - **Corrente/multiplicador:** getters `combo` e `multiplier` e o reset no escapamento, em `step()` de `game.js`.
 - **Fases:** array `PHASES` em `game.js` (uma fase a cada 25 pontos).
-- **Alvos de banquete:** `SPECIAL_POINTS` e o raro upgrade de spawn no método `spawn()` de `game.js`; badge e efeito em `drawSpecial()` em `script.js`.
-- **Trajes do titã:** array `PLAYER_ASPECTS` + ajudante `unlockedAspects(best)` em `game.js`; lavagem de cor (`source-atop`), aura, seletor e persistência em `script.js`.
+- **Titã jogável:** `PLAYER_TITAN_IDS` e o método `setPlayerTitan()` em `game.js`; mapeamento dos frames (`TITAN_FRAMES`), seletor e persistência em `script.js`; o titã escolhido nunca é gerado como alvo.
 - **Conquistas:** array `ACHIEVEMENTS` em `game.js` (metas testáveis via `engine.stats`); UI e persistência em `script.js`.
-- **Arte dos personagens:** atlas `assets/sprites.png` + frames em `assets/sprites.js`; wrappers `drawPlayer`, `drawHuman` e `drawEnemy` em `script.js`.
+- **Arte dos personagens:** atlas `assets/sprites.png` + frames em `assets/sprites.js` (jogador original, rivais, humanos) e o atlas secundário `assets/titans.png` + frames em `assets/titans.js` (titãs jogáveis Cinza, Carmesim e Laranja); wrappers `drawPlayer`, `drawHuman` e `drawEnemy` em `script.js`.
 - **Cenário:** `Scenery.paintBackground()` em `script.js` (cacheado em um canvas offscreen e redesenhado apenas no resize).
 - **Sons:** `SoundBank.play()` em `script.js`.
 - **Textos/telas:** `index.html`.

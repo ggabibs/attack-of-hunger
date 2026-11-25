@@ -31,27 +31,11 @@
     { id: 'feast', name: 'Fome sem fim', hint: 'Chegar a 200 humanos.', test: (s) => s.score >= 200 },
     { id: 'combo-ten', name: 'Corretiva dez', hint: 'Fazer uma corrente de 10 humanos.', test: (s) => s.combo >= 10 },
     { id: 'combo-twenty', name: 'Mestre da corrente', hint: 'Fazer uma corrente de 20 humanos.', test: (s) => s.combo >= 20 },
-    { id: 'special-feast', name: 'Banquete de titã', hint: 'Comer 5 alvos de banquete.', test: (s) => s.specialCount >= 5 },
     { id: 'survivor', name: 'Sobrevivente', hint: 'Ficar 3 minutos na partida.', test: (s) => s.elapsed >= 180 }
   ];
 
-  // Rare feast target: an edible humanoid carrying extra points.
-  const SPECIAL_POINTS = 3;
-
-  // Player outfits. wash is a translucent color layered over the sprite with a
-  // "source-atop" blend in script.js; glow is a soft aura drawn behind the titan.
-  // Outfits unlock progressively with the best score kept in localStorage.
-  const PLAYER_ASPECTS = [
-    { id: 'default', name: 'Titã Padrão', hint: 'O titã como ele é.', unlockScore: 0, wash: null, glow: null },
-    { id: 'desert', name: 'Titã do Deserto', hint: 'Desbloqueia com 50 humanos.', unlockScore: 50, wash: 'rgba(240, 170, 80, .32)', glow: '#f0a850' },
-    { id: 'shadow', name: 'Titã das Sombras', hint: 'Desbloqueia com 100 humanos.', unlockScore: 100, wash: 'rgba(96, 112, 224, .32)', glow: '#7c8ce8' },
-    { id: 'gold', name: 'Titã Dourado', hint: 'Desbloqueia com 150 humanos.', unlockScore: 150, wash: 'rgba(255, 205, 60, .34)', glow: '#ffc93c' },
-    { id: 'hunger', name: 'Titã da Fome', hint: 'Desbloqueia com 200 humanos.', unlockScore: 200, wash: 'rgba(224, 72, 60, .32)', glow: '#ff6a5c' }
-  ];
-
-  function unlockedAspects(bestScore) {
-    return PLAYER_ASPECTS.filter(aspect => aspect.unlockScore <= bestScore);
-  }
+  // Selectable playable titans. script.js maps each id to sprite frame names.
+  const PLAYER_TITAN_IDS = ['original', 'cinza', 'carmesim', 'laranja'];
 
   // Swept collision in ellipse space: a fast target cannot skip the player.
   function segmentHitsEllipse(ax, ay, bx, by, rx, ry) {
@@ -74,11 +58,11 @@
       this.height = options.height || 800;
       this.random = options.random || Math.random;
       this.difficulty = options.difficulty || 'normal';
+      this.playerTitan = options.playerTitan || 'original';
       this.state = 'menu';
       this.score = 0;
       this.elapsed = 0;
       this.combo = 0;
-      this.specialCount = 0;
       this.entities = [];
       this.pool = [];
       this.events = [];
@@ -99,7 +83,7 @@
     }
     get phaseIndex() { return Math.min(Math.floor(this.score / 25), PHASES.length - 1); }
     get phase() { return PHASES[this.phaseIndex]; }
-    get stats() { return { score: this.score, combo: this.combo, level: this.level, elapsed: this.elapsed, specialCount: this.specialCount }; }
+    get stats() { return { score: this.score, combo: this.combo, level: this.level, elapsed: this.elapsed }; }
     get timeSpeedBoost() {
       // Speed ramps up with survived time even if the player scores nothing.
       // Full time bonus is reached after 150 seconds and then stays capped.
@@ -116,7 +100,14 @@
       const fairnessFloor = Math.max(0.58, 160 / (this.height * 0.65))
         * (this.difficulty === 'easy' ? 1.1 : this.difficulty === 'hard' ? 0.9 : 1);
       const factor = this.difficulty === 'easy' ? 1.2 : this.difficulty === 'hard' ? 0.9 : 1;
-      return Math.max(fairnessFloor, (1.06 - this.score * 0.0065) * factor);
+      // Waves fall faster the longer the match lasts, even without scoring.
+      const timeBoost = Math.min(Math.max(this.elapsed, 0) / 240, 1) * 0.35;
+      return Math.max(fairnessFloor, (1.06 - this.score * 0.0065) * factor * (1 - timeBoost));
+    }
+    // Time-based share drift: more rival titans appear the longer you survive.
+    get titanTimeDrift() { return Math.min(Math.max(this.elapsed, 0) / 240, 1) * 0.08; }
+    setPlayerTitan(id) {
+      if (PLAYER_TITAN_IDS.includes(id)) this.playerTitan = id;
     }
     get laneCount() { return clamp(Math.floor((this.width - 72) / 72), 4, 10); }
 
@@ -125,7 +116,6 @@
       this.score = 0;
       this.elapsed = 0;
       this.combo = 0;
-      this.specialCount = 0;
       this.spawnClock = 0.45;
       this.spawnCount = 0;
       this.lastLane = -1;
@@ -191,14 +181,12 @@
       // One target per wave, with a generous vertical gap even at maximum speed.
       // There is always an open lane; we never generate an unavoidable wall.
       const roll = this.random();
-      // Rival titan density by difficulty: titan when roll <= threshold.
-      // Easy ~20% titans, normal ~33%, hard ~80% of eligible waves.
+      // Rival titan density by difficulty and survival time: titan when roll <= threshold.
+      // Easy ~20% titans, normal ~33%, hard ~80% of eligible waves; drift adds up to 8%.
       const titanThreshold = this.difficulty === 'easy' ? 0.2 : this.difficulty === 'hard' ? 0.8 : 0.33;
-      let kind = this.spawnCount < 3 || roll > titanThreshold ? 'human' : 'titan';
+      let kind = this.spawnCount < 3 || roll > (titanThreshold + this.titanTimeDrift) ? 'human' : 'titan';
       if (this.titanStreak >= 2) kind = 'human';
       if (this.humanStreak >= 4) kind = 'titan';
-      // Rare feast target: a bonus-carrying edible, never in the opening waves.
-      if (kind === 'human' && this.spawnCount >= 4 && this.random() < 0.08) kind = 'special';
       let lane = Math.floor(this.random() * this.laneCount);
       if (lane === this.lastLane) lane = (lane + 1 + Math.floor(this.random() * (this.laneCount - 1))) % this.laneCount;
       if (this.spawnCount === 0) lane = Math.floor(this.laneCount / 2);
@@ -207,15 +195,14 @@
       entity.kind = kind;
       entity.x = this.laneX(clamp(lane, 0, this.laneCount - 1));
       entity.y = -48;
-      // Seven human sprites (feast targets share them); two rival titans (Beast / Armored).
-      const humanFamily = kind === 'human' || kind === 'special';
-      entity.variant = clamp(Math.floor(this.random() * (humanFamily ? 7 : 2)), 0, humanFamily ? 6 : 1);
+      // Seven human sprites; two rival titans (Beast / Armored).
+      entity.variant = clamp(Math.floor(this.random() * (kind === 'human' ? 7 : 2)), 0, kind === 'human' ? 6 : 1);
       entity.phase = this.random() * Math.PI * 2;
       this.entities.push(entity);
       this.lastLane = lane;
       this.spawnCount++;
       this.titanStreak = kind === 'titan' ? this.titanStreak + 1 : 0;
-      this.humanStreak = humanFamily ? this.humanStreak + 1 : 0;
+      this.humanStreak = kind === 'human' ? this.humanStreak + 1 : 0;
     }
 
     update(delta) {
@@ -267,9 +254,8 @@
             return;
           }
           this.combo++;
-          const points = (entity.kind === 'special' ? SPECIAL_POINTS : 1) * this.multiplier;
+          const points = this.multiplier;
           this.score += points;
-          if (entity.kind === 'special') this.specialCount++;
           this.player.munch = 0.25;
           this.events.push({
             type: 'capture',
@@ -278,15 +264,14 @@
             score: this.score,
             points,
             combo: this.combo,
-            multiplier: this.multiplier,
-            special: entity.kind === 'special'
+            multiplier: this.multiplier
           });
           this.pool.push(entity);
           continue;
         }
         if (entity.y > this.height + 65) {
-          // An escaped edible breaks the combo streak, but costs no points.
-          if ((entity.kind === 'human' || entity.kind === 'special') && this.combo > 0) {
+          // An escaped human breaks the combo streak, but costs no points.
+          if (entity.kind === 'human' && this.combo > 0) {
             this.combo = 0;
             this.events.push({ type: 'combo-reset' });
           }
@@ -305,5 +290,5 @@
     }
   }
 
-  return { HungerEngine, segmentHitsEllipse, clamp, PLAYER_HEIGHT, PLAYER_FEET_OFFSET, PLAYER_MOUTH_FROM_TOP, PHASES, ACHIEVEMENTS, PLAYER_ASPECTS, unlockedAspects, SPECIAL_POINTS };
+  return { HungerEngine, segmentHitsEllipse, clamp, PLAYER_HEIGHT, PLAYER_FEET_OFFSET, PLAYER_MOUTH_FROM_TOP, PHASES, ACHIEVEMENTS, PLAYER_TITAN_IDS };
 });
