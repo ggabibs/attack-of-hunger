@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  const { HungerEngine, clamp, PLAYER_HEIGHT, PLAYER_FEET_OFFSET, ACHIEVEMENTS, PLAYER_ASPECTS, unlockedAspects } = window.HungerGame;
+  const { HungerEngine, clamp, PLAYER_HEIGHT, PLAYER_FEET_OFFSET, ACHIEVEMENTS, PLAYER_TITAN_IDS } = window.HungerGame;
   const TAU = Math.PI * 2;
   const INK = '#293d2d';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -48,44 +48,6 @@
     if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke(); }
   }
 
-  // Layers a translucent wash over the sprite pixels only ("source-atop" keeps
-  // the sprite's alpha shape), giving outfit color variations without new art.
-  function tintSprite(ctx, x, y, width, height, wash) {
-    if (!wash) return;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x, y, width, height);
-    ctx.clip();
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.fillStyle = wash;
-    ctx.fillRect(x, y, width, height);
-    ctx.restore();
-  }
-
-  function starPoints(cx, cy, outer, inner) {
-    const points = [];
-    for (let i = 0; i < 10; i++) {
-      const radius = i % 2 === 0 ? outer : inner;
-      const angle = (Math.PI / 5) * i - Math.PI / 2;
-      points.push([cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius]);
-    }
-    return points;
-  }
-
-  // Rare feast target: a human carrying a bonus, marked with a gold star.
-  function drawSpecial(ctx, x, y, variant = 0, time = 0, scale = 1) {
-    drawHuman(ctx, x, y, variant, time, scale, false);
-    const badgeY = y - 33 * scale;
-    const pulse = 1 + Math.sin(time * 6) * 0.12;
-    ctx.save();
-    ctx.translate(x, badgeY);
-    ctx.scale(scale, scale);
-    ctx.rotate(Math.sin(time * 2) * 0.25);
-    ellipse(ctx, 0, 0, 13 * pulse, 13 * pulse, 'rgba(255, 214, 94, .28)');
-    polygon(ctx, starPoints(0, 0, 9 * pulse, 4 * pulse), '#ffd75e', '#8a5a1e', 1.6);
-    ctx.restore();
-  }
-
   function seededRandom(seed) {
     return function () {
       seed = (seed * 1664525 + 1013904223) >>> 0;
@@ -94,38 +56,72 @@
   }
 
   class SpriteBank {
-    constructor(manifest) {
-      this.frames = (manifest && manifest.frames) || {};
-      this.image = new Image();
+    constructor(manifests) {
+      const list = (Array.isArray(manifests) ? manifests : [manifests]).filter(Boolean);
+      this.frames = {};
+      this.images = [];
+      this.imageReady = [];
       this.ready = false;
       this.failed = false;
       this.onLoad = null;
-      if (manifest && manifest.src) {
-        this.image.onload = () => {
-          this.ready = true;
-          if (this.onLoad) this.onLoad();
-        };
-        this.image.onerror = () => {
+      let pending = list.length;
+      const check = () => {
+        if (pending > 0) return;
+        this.ready = true;
+        if (this.onLoad) this.onLoad();
+      };
+      for (const manifest of list) {
+        if (!manifest || !manifest.src) { pending = Math.max(0, pending - 1); check(); continue; }
+        const image = new Image();
+        const index = this.images.length;
+        this.images.push(image);
+        this.imageReady.push(false);
+        for (const [name, frame] of Object.entries(manifest.frames || {})) {
+          this.frames[name] = { x: frame.x, y: frame.y, w: frame.w, h: frame.h, img: index };
+        }
+        image.onload = () => { this.imageReady[index] = true; pending--; check(); };
+        image.onerror = () => {
           this.failed = true;
-          console.error('[Attack of Hunger] Não foi possível carregar assets/sprites.png. Usando fallback visual.');
+          console.error('[Attack of Hunger] Não foi possível carregar um atlas de sprites. Usando fallback visual.');
+          pending--; check();
         };
-        this.image.src = manifest.src;
+        image.src = manifest.src;
       }
+      check();
     }
 
-    frame(name) { return this.ready ? this.frames[name] : null; }
+    frame(name) {
+      const frame = this.frames[name];
+      if (!frame || !this.imageReady[frame.img]) return null;
+      return frame;
+    }
 
     draw(ctx, name, x, y, width, height) {
       const frame = this.frame(name);
       if (!frame) return false;
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(this.image, frame.x, frame.y, frame.w, frame.h, x, y, width, height);
+      ctx.drawImage(this.images[frame.img], frame.x, frame.y, frame.w, frame.h, x, y, width, height);
       return true;
     }
   }
 
-  const spriteBank = new SpriteBank(window.HungerSprites);
+  const spriteBank = new SpriteBank([window.HungerSprites, window.HungerTitans]);
+
+  // Selectable playable titans: each id maps to its atlas frame names.
+  const TITAN_FRAMES = {
+    original: { idle: 'player_idle', eat: 'player_eat' },
+    cinza: { idle: 'titan_cinza_idle', eat: 'titan_cinza_eat' },
+    carmesim: { idle: 'titan_carmesim_idle', eat: 'titan_carmesim_eat' },
+    laranja: { idle: 'titan_laranja_idle', eat: 'titan_laranja_eat' }
+  };
+  const TITAN_CHOICES = [
+    { id: 'original', name: 'Titã Original' },
+    { id: 'cinza', name: 'Titã Cinza' },
+    { id: 'carmesim', name: 'Titã Carmesim' },
+    { id: 'laranja', name: 'Titã Laranja' }
+  ];
+  const TITAN_SWATCHES = { original: '#86a16c', cinza: '#9aa4ad', carmesim: '#9a1b1b', laranja: '#d9741f' };
 
   function drawTargetBadge(ctx, x, y, scale) {
     ellipse(ctx, x, y, 8 * scale, 8 * scale, '#fff4d5', '#4e7147', 1.4 * scale);
@@ -264,9 +260,10 @@
     ctx.restore();
   }
 
-  function drawPlayer(ctx, x, feet, time, munch = 0, defeated = false, scale = 1, look = 0, aspect = null) {
+  // titan: optional { idle, eat } frame names for a selectable playable titan.
+  function drawPlayer(ctx, x, feet, time, munch = 0, defeated = false, scale = 1, look = 0, titan = null) {
     const eating = munch > 0.03 && !defeated;
-    const name = eating ? 'player_eat' : 'player_idle';
+    const name = (titan && (eating ? titan.eat : titan.idle)) || (eating ? 'player_eat' : 'player_idle');
     const frame = spriteBank.frame(name);
     if (frame) {
       const chomp = munch > 0 ? Math.sin(munch / 0.25 * Math.PI) : 0;
@@ -281,14 +278,13 @@
       else if (!reducedMotion.matches) ctx.rotate(look * 0.02);
       ctx.scale(1 + chomp * 0.05, 1 - chomp * 0.035);
       spriteBank.draw(ctx, name, -width / 2, -height, width, height);
-      tintSprite(ctx, -width / 2, -height, width, height, aspect && aspect.wash);
       ctx.restore();
       return;
     }
-    drawPlayerFallback(ctx, x, feet, time, munch, defeated, scale, look, aspect);
+    drawPlayerFallback(ctx, x, feet, time, munch, defeated, scale, look);
   }
 
-  function drawPlayerFallback(ctx, x, feet, time, munch = 0, defeated = false, scale = 1, look = 0, aspect = null) {
+  function drawPlayerFallback(ctx, x, feet, time, munch = 0, defeated = false, scale = 1, look = 0) {
     ctx.save();
     ctx.translate(x, feet);
     ctx.scale(scale, scale);
@@ -367,7 +363,6 @@
       line(ctx, [[-21,-80],[21,-80]], '#a89f78', 1);
       for (let tooth = -15; tooth <= 15; tooth += 6) line(ctx, [[tooth,-84],[tooth,-73]], '#a89f78', 1);
     }
-    tintSprite(ctx, -46, -155, 92, 165, aspect && aspect.wash);
     ctx.restore();
   }
 
@@ -383,7 +378,7 @@
       this.labels = Array.from({ length: 8 }, () => ({ active: false, x: 0, y: 0, life: 0, text: '+1', color: '#fff1bf' }));
       this.particleCursor = 0;
       this.labelCursor = 0;
-      this.playerAspect = null;
+      this.playerTitan = null;
     }
 
     resize(width, height) {
@@ -602,19 +597,6 @@
       for (const label of this.labels) label.active = false;
     }
 
-    drawPlayerGlow(ctx, x, feet, aspect, scale) {
-      if (!aspect || !aspect.glow) return;
-      const gy = feet - 80 * scale;
-      const radius = 78 * scale;
-      const gradient = ctx.createRadialGradient(x, gy, 4 * scale, x, gy, radius);
-      gradient.addColorStop(0, aspect.glow + '40');
-      gradient.addColorStop(1, aspect.glow + '00');
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(x, gy, radius, 0, TAU);
-      ctx.fill();
-    }
-
     capture(x, y, text = '+1', color = '#fff1bf') {
       const count = reducedMotion.matches ? 4 : 13;
       for (let i = 0; i < count; i++) {
@@ -667,8 +649,7 @@
           drawHuman(ctx, w*.18, h*.57 + Math.sin(ambientTime*2)*5, 0, ambientTime, 1.05);
           drawEnemy(ctx, w*.82, h*.59 + Math.sin(ambientTime*1.7+2)*4, ambientTime, .78);
         }
-        this.drawPlayerGlow(ctx, px, feet, this.playerAspect, playerScale);
-        drawPlayer(ctx, px, feet, ambientTime, 0, false, playerScale, Math.sin(ambientTime*.6)*.5, this.playerAspect);
+        drawPlayer(ctx, px, feet, ambientTime, 0, false, playerScale, Math.sin(ambientTime*.6)*.5, this.playerTitan);
         if (h > 610) {
           ctx.save();
           ctx.translate(w*.70, feet - 142*playerScale);
@@ -682,12 +663,10 @@
       } else {
         for (const entity of engine.entities) {
           if (entity.kind === 'human') drawHuman(ctx, entity.x, entity.y, entity.variant, ambientTime + entity.phase, 1);
-          else if (entity.kind === 'special') drawSpecial(ctx, entity.x, entity.y, entity.variant, ambientTime + entity.phase, 1);
           else drawEnemy(ctx, entity.x, entity.y, ambientTime + entity.phase, 1, true, entity.variant);
         }
         const look = clamp((engine.player.targetX - engine.player.x) / 50, -1, 1);
-        this.drawPlayerGlow(ctx, engine.player.x, h - PLAYER_FEET_OFFSET, this.playerAspect, 1);
-        drawPlayer(ctx, engine.player.x, h - PLAYER_FEET_OFFSET, ambientTime, engine.player.munch, engine.state === 'over', 1, look, this.playerAspect);
+        drawPlayer(ctx, engine.player.x, h - PLAYER_FEET_OFFSET, ambientTime, engine.player.munch, engine.state === 'over', 1, look, this.playerTitan);
       }
       for (const p of this.particles) {
         if (!p.active) continue;
@@ -759,7 +738,6 @@
 
     play(name) {
       if (name === 'capture') { this.tone(660,0,.10,'sine',.45); this.tone(990,.055,.13,'sine',.3); }
-      if (name === 'special') { this.tone(1046,0,.08,'sine',.4); this.tone(1318,.06,.08,'sine',.35); this.tone(1568,.12,.14,'sine',.35); }
       if (name === 'combo') { this.tone(880,0,.07,'triangle',.32); this.tone(1175,.06,.1,'triangle',.32); }
       if (name === 'achievement') { this.tone(784,0,.1,'sine',.4); this.tone(988,.08,.1,'sine',.4); this.tone(1319,.16,.18,'sine',.4); }
       if (name === 'start') { this.tone(392,0,.12,'triangle',.35); this.tone(523,.09,.12,'triangle',.35); this.tone(784,.18,.2,'sine',.4); }
@@ -780,6 +758,7 @@
     window.__engine = engine;
     const scenery = new Scenery(canvas);
     window.__scenery = scenery;
+    window.__spriteBank = spriteBank;
     const storagePrefix = 'attack-of-hunger:';
     const warnedKeys = new Set();
     function readStorage(key, fallback) {
@@ -807,11 +786,10 @@
     } catch (error) {
       unlockedAchievements = new Set();
     }
-    let currentAspectId = readStorage('aspect', 'default');
-    if (!PLAYER_ASPECTS.some(aspect => aspect.id === currentAspectId)) currentAspectId = PLAYER_ASPECTS[0].id;
-    let currentAspect = PLAYER_ASPECTS.find(aspect => aspect.id === currentAspectId) || PLAYER_ASPECTS[0];
-    if (!unlockedAspects(best).some(aspect => aspect.id === currentAspect.id)) currentAspect = PLAYER_ASPECTS[0];
-    scenery.playerAspect = currentAspect;
+    let currentTitanId = readStorage('titan', 'original');
+    if (!PLAYER_TITAN_IDS.includes(currentTitanId)) currentTitanId = 'original';
+    engine.playerTitan = currentTitanId;
+    scenery.playerTitan = TITAN_FRAMES[currentTitanId] || TITAN_FRAMES.original;
     const screens = {
       menu: document.getElementById('menu-screen'),
       help: document.getElementById('help-screen'),
@@ -957,36 +935,29 @@
         achievementsGrid.appendChild(card);
       }
     }
-    function renderAspects() {
-      const row = document.getElementById('aspect-row');
+    function renderTitanChoice() {
+      const row = document.getElementById('titan-row');
       if (!row) return;
       row.textContent = '';
-      for (const aspect of PLAYER_ASPECTS) {
-        const unlocked = aspect.unlockScore <= best;
+      for (const choice of TITAN_CHOICES) {
         const button = document.createElement('button');
-        button.className = 'aspect-button' + (aspect.id === currentAspect.id ? ' is-active' : '') + (unlocked ? '' : ' is-locked');
-        button.dataset.action = 'aspect';
-        button.dataset.aspect = aspect.id;
-        button.setAttribute('aria-pressed', String(aspect.id === currentAspect.id));
-        button.setAttribute('aria-disabled', String(!unlocked));
-        button.title = unlocked ? aspect.hint : 'Libera com ' + aspect.unlockScore + ' humanos';
-        button.innerHTML = '<span class="aspect-swatch" style="background:' + (aspect.glow || '#86a16c') + '"></span><span class="aspect-name">' + aspect.name + '</span>';
+        button.className = 'titan-button' + (choice.id === currentTitanId ? ' is-active' : '');
+        button.dataset.action = 'titan';
+        button.dataset.titan = choice.id;
+        button.setAttribute('aria-pressed', String(choice.id === currentTitanId));
+        button.title = 'Titã jogável: ' + choice.name;
+        button.innerHTML = '<span class="titan-swatch" style="background:' + TITAN_SWATCHES[choice.id] + '"></span><span class="titan-name">' + choice.name + '</span>';
         row.appendChild(button);
       }
     }
-    function selectAspect(id) {
-      const aspect = PLAYER_ASPECTS.find(a => a.id === id);
-      if (!aspect) return;
-      if (aspect.unlockScore > best) {
-        announcer.textContent = 'Esse traje libera com ' + aspect.unlockScore + ' humanos. Seu recorde é ' + best + '.';
-        return;
-      }
-      currentAspectId = aspect.id;
-      currentAspect = aspect;
-      writeStorage('aspect', aspect.id);
-      scenery.playerAspect = aspect;
-      renderAspects();
-      announcer.textContent = 'Traje equipado: ' + aspect.name;
+    function selectTitan(id) {
+      if (!PLAYER_TITAN_IDS.includes(id)) return;
+      currentTitanId = id;
+      writeStorage('titan', id);
+      engine.playerTitan = id;
+      scenery.playerTitan = TITAN_FRAMES[id] || TITAN_FRAMES.original;
+      renderTitanChoice();
+      announcer.textContent = 'Titã jogável: ' + (TITAN_CHOICES.find(c => c.id === id) || {}).name;
     }
     function startGame() {
       clearInput();
@@ -1039,10 +1010,9 @@
     function processEvents() {
       for (const event of engine.drainEvents()) {
         if (event.type === 'capture') {
-          scenery.capture(event.x, event.y, '+' + event.points, event.special ? '#ffd75e' : (event.multiplier > 1 ? '#f6b63c' : '#fff1bf'));
-          if (event.special) sound.play('special');
+          scenery.capture(event.x, event.y, '+' + event.points, event.multiplier > 1 ? '#f6b63c' : '#fff1bf');
+          if (event.multiplier > 1 && event.combo % 5 === 0) sound.play('combo');
           else sound.play('capture');
-          if (!event.special && event.multiplier > 1 && event.combo % 5 === 0) sound.play('combo');
           updateHUD();
           if (!reducedMotion.matches && scoreElement.animate) {
             if (scoreAnimation) scoreAnimation.cancel();
@@ -1052,7 +1022,6 @@
             best = engine.score;
             writeStorage('best', best);
             updateBest();
-            renderAspects();
           }
           checkAchievements();
         }
@@ -1100,7 +1069,7 @@
       else if (action === 'achievements') showScreen('achievements');
       else if (action === 'close-achievements') closeAchievements();
       else if (action === 'difficulty') setDifficulty(button.dataset.difficulty);
-      else if (action === 'aspect') selectAspect(button.dataset.aspect);
+      else if (action === 'titan') selectTitan(button.dataset.titan);
       else if (action === 'sound') {
         sound.setEnabled(!sound.enabled);
         writeStorage('sound', sound.enabled ? '1' : '0');
@@ -1216,7 +1185,7 @@
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(stage);
     else window.addEventListener('resize', resize);
     resize();
-    updateBest(); updateSound(); updateDifficultyUI(); updateAchievementsUI(); renderAspects(); showScreen('menu', false);
+    updateBest(); updateSound(); updateDifficultyUI(); updateAchievementsUI(); renderTitanChoice(); showScreen('menu', false);
 
     function paintLegend(id, kind) {
       const legend = document.getElementById(id);
