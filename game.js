@@ -31,7 +31,11 @@
     { id: 'feast', name: 'Fome sem fim', hint: 'Chegar a 200 humanos.', test: (s) => s.score >= 200 },
     { id: 'combo-ten', name: 'Corretiva dez', hint: 'Fazer uma corrente de 10 humanos.', test: (s) => s.combo >= 10 },
     { id: 'combo-twenty', name: 'Mestre da corrente', hint: 'Fazer uma corrente de 20 humanos.', test: (s) => s.combo >= 20 },
-    { id: 'survivor', name: 'Sobrevivente', hint: 'Ficar 3 minutos na partida.', test: (s) => s.elapsed >= 180 }
+    { id: 'combo-thirty', name: 'Corrente longa', hint: 'Fazer uma corrente de 30 humanos.', test: (s) => s.combo >= 30 },
+    { id: 'survivor', name: 'Sobrevivente', hint: 'Ficar 3 minutos na partida.', test: (s) => s.elapsed >= 180 },
+    { id: 'survivor-legend', name: 'Sobrevivente lendário', hint: 'Ficar 5 minutos na partida.', test: (s) => s.elapsed >= 300 },
+    { id: 'score-500', name: 'Mestre da fome', hint: 'Chegar a 500 humanos.', test: (s) => s.score >= 500 },
+    { id: 'phase-max', name: 'Além da muralha', hint: 'Chegar à fase máxima (Fome Sem Fim).', test: (s) => s.level >= 6 }
   ];
 
   // Selectable playable titans. script.js maps each id to sprite frame names.

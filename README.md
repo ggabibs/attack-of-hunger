@@ -15,10 +15,11 @@ Feito com **HTML5, CSS3, JavaScript puro e Canvas 2D**. Sem backend, sem banco d
 - **Dificuldade:** no menu, escolha **Fácil**, **Normal** ou **Difícil**. A dificuldade ajusta a velocidade de queda, a frequência das ondas e a densidade de titãs rivais. A escolha fica salva no navegador.
 - **Objetivo:** cada humano vale **1 ponto**. Humanos perdidos não tiram pontos, mas quebram a corrente. Outro titã encerra a partida imediatamente.
 - **Corrente (combo):** coma humanos em sequência, sem deixar nenhum escapar. A cada 5 capturas a pontuação dobra, até **X5**; o valor ganho aparece como pontuação flutuante no local da captura.
-- **Fases:** a cada 25 humanos o HUD mostra a fase atual (de *LANCHE LIGHT* até *FOME SEM FIM*).
+- **Fases e cenário evolutivo:** a cada 25 humanos o HUD mostra a fase atual (de *LANCHE LIGHT* até *FOME SEM FIM*) e o **cenário muda junto** — o céu, o sol, as nuvens, o chão e o caminho se repintam em uma progressão de paletas (dia → entardecer → noite → noite profunda/vermelha), com estrelas nas fases noturnas. A mudança é automática e rePinta o pano de fundo em cada nova fase.
 - **Titã jogável:** botão compacto **Escolha seu personagem** no menu, que abre uma tela com todos os titãs — *Eren*, *Martelo de Guerra*, *Fêmea*, *Bestial*, *Blindado* e *Colossal* — cada um com uma pré-visualização do sprite. A escolha fica salva no navegador e o titã escolhido **nunca** cai como alvo comestível. **Todos os titãs são rivais**: qualquer um dos 6 pode cair como titã comestível (exceto o escolhido para jogar).
 - **Densidade por tempo:** o ritmo da partida sobe com a duração — quanto mais o jogo durar, caem **mais humanos e mais titãs** no mesmo intervalo, independente da pontuação (a dificuldade define o piso de justiça das ondas).
-- **Conquistas:** 8 metas colecionáveis (pontuação, corrente e tempo) aparecem no menu e no ícone de recorde, com uma tela dedicada. Fica tudo salvo no navegador.
+- **Estatísticas:** tela **ESTATÍSTICAS** no menu com o histórico do titã — humanos totais capturados, melhor corrente, melhor pontuação, partidas jogadas, tempo total, humanos escapados e fase máxima — tudo salvo no navegador.
+- **Conquistas:** 12 metas colecionáveis (pontuação, corrente, tempo e fase) aparecem no menu e no ícone de recorde, com uma tela dedicada. Fica tudo salvo no navegador.
 - **Elenco:** Eren (o titã de olhos verdes) é o jogador por padrão; Martelo de Guerra, Fêmea, Bestial, Blindado e Colossal são opções jogáveis e rivais; há 7 variações de humanos sorteadas como alvos.
 
 A velocidade dos itens que caem aumenta gradualmente com a pontuação **e também com o tempo de partida** (mesmo se você não pontuar). A frequência das ondas aumenta com a pontuação **e com o tempo de partida**, e a densidade de titãs rivais também cresce conforme a partida se estende. As ondas são espaçadas e sempre deixam uma rota de desvio possível. O recorde é salvo automaticamente no `localStorage` do navegador.
@@ -117,9 +118,10 @@ Durante o desenvolvimento também foi validado em Chromium com simulação mobil
 - **Corrente/multiplicador:** getters `combo` e `multiplier` e o reset no escapamento, em `step()` de `game.js`.
 - **Fases:** array `PHASES` em `game.js` (uma fase a cada 25 pontos).
 - **Titã jogável:** `PLAYER_TITAN_IDS` e o método `setPlayerTitan()` em `game.js`; mapeamento dos frames (`TITAN_FRAMES`), tela de seleção com cartões (`renderTitanCards` + `drawTitanPreview`) e persistência em `script.js`; o titã escolhido é excluído das spawns (rivais) em `spawn()`.
+- **Estatísticas:** acumulação nos eventos `capture`/`combo-reset`/`defeat` em `script.js`; tela **ESTATÍSTICAS` com `renderStats()`, persistência da chave `stats` em `localStorage`.
 - **Conquistas:** array `ACHIEVEMENTS` em `game.js` (metas testáveis via `engine.stats`); UI e persistência em `script.js`.
 - **Arte dos personagens:** atlas `assets/sprites.png` + frames em `assets/sprites.js` (jogador original, humanos) e o atlas secundário `assets/titans.png` + frames em `assets/titans.js` (Martelo de Guerra, Fêmea, Colossal); todos os 6 titãs são renderizados como rivais em `drawEnemy` (via `RIVAL_VARIANTS`), e wrappers `drawPlayer`, `drawHuman` em `script.js`.
-- **Cenário:** `Scenery.paintBackground()` em `script.js` (cacheado em um canvas offscreen e redesenhado apenas no resize).
+- **Cenário:** `PHASE_PALETTES` + `Scenery.paintBackground(ctx, phaseIndex)`/`repaintBackground()` em `script.js` (cacheado em canvas offscreen; repinta automaticamente quando a fase do engine muda em `draw`).
 - **Sons:** `SoundBank.play()` em `script.js`.
 - **Textos/telas:** `index.html`.
 
