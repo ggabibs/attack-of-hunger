@@ -494,3 +494,15 @@ function countTitans(game, waves) {
   }
   return titans;
 }
+
+test('mouth animation is triggered only by a human capture and expires', () => {
+  const game = new HungerEngine();
+  game.start();
+  assert.equal(game.player.munch, 0);
+  target(game, 'human', game.player.x, game.mouthY - 1);
+  game.update(0.016);
+  assert.ok(game.player.munch > 0 && game.player.munch <= 0.25);
+  game.entities = [];
+  for (let i = 0; i < 20; i++) game.update(0.016);
+  assert.equal(game.player.munch, 0);
+});

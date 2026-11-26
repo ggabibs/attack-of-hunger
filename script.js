@@ -284,13 +284,40 @@
     ctx.restore();
   }
 
-  // titan: optional { idle, eat } frame names for a selectable playable titan.
+  // Mouth positions are measured in the native idle sprite coordinates. Keep the
+  // original artwork intact: only this small region changes during a capture.
+  const TITAN_MOUTHS = {
+    player_idle:          { x: 145, y: 91,  rx: 11, ry: 5, teeth: '#dfd2ac' },
+    titan_cinza_idle:     { x: 138, y: 111, rx: 8, ry: 4, teeth: '#dedbd2' },
+    titan_laranja_idle:   { x: 170, y: 128, rx: 11, ry: 6, teeth: '#f2d4c2' },
+    rival_beast:          { x: 130, y: 36,  rx: 7, ry: 4, teeth: '#c8b49a' },
+    rival_armored:        { x: 125, y: 68,  rx: 10, ry: 5, teeth: '#ddd1ab' },
+    titan_colossal_idle:  { x: 214, y: 79,  rx: 14, ry: 6, teeth: '#e6c69a' }
+  };
+
+  function drawEatingMouth(ctx, mouth, openness) {
+    if (!mouth || openness <= 0) return;
+    const { x, y, rx, ry, teeth } = mouth;
+    const opening = ry * openness;
+    ctx.save();
+    // A dark opening and restrained teeth stay within the face, not the jaw or body.
+    ctx.fillStyle = '#321716';
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, opening, 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (openness > 0.25) {
+      ctx.fillStyle = teeth;
+      ctx.fillRect(x - rx * 0.65, y - opening * 0.65, rx * 1.3, Math.max(0.8, opening * 0.22));
+      ctx.fillRect(x - rx * 0.52, y + opening * 0.40, rx * 1.04, Math.max(0.8, opening * 0.18));
+    }
+    ctx.restore();
+  }
+
+  // The same idle frame is used throughout; only the mouth opens after capture.
   function drawPlayer(ctx, x, feet, time, munch = 0, defeated = false, scale = 1, look = 0, titan = null) {
-    const eating = munch > 0.03 && !defeated;
-    const name = (titan && (eating ? titan.eat : titan.idle)) || (eating ? 'player_eat' : 'player_idle');
+    const name = (titan && titan.idle) || 'player_idle';
     const frame = spriteBank.frame(name);
     if (frame) {
-      const chomp = munch > 0 ? Math.sin(munch / 0.25 * Math.PI) : 0;
       const height = PLAYER_HEIGHT * scale;
       const width = height * frame.w / frame.h;
       const bob = reducedMotion.matches ? 0 : Math.sin(time * 3.2) * 1.7;
@@ -300,8 +327,14 @@
       ctx.translate(0, bob);
       if (defeated) ctx.rotate(-0.06);
       else if (!reducedMotion.matches) ctx.rotate(look * 0.02);
-      ctx.scale(1 + chomp * 0.05, 1 - chomp * 0.035);
       spriteBank.draw(ctx, name, -width / 2, -height, width, height);
+      if (munch > 0 && !defeated) {
+        ctx.save();
+        ctx.translate(-width / 2, -height);
+        ctx.scale(width / frame.w, height / frame.h);
+        drawEatingMouth(ctx, TITAN_MOUTHS[name], Math.sin(Math.min(1, munch / 0.25) * Math.PI));
+        ctx.restore();
+      }
       ctx.restore();
       return;
     }
