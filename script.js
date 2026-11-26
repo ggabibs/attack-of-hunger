@@ -113,8 +113,8 @@
     original: { idle: 'player_idle', eat: 'player_eat' },
     cinza: { idle: 'titan_cinza_idle', eat: 'titan_cinza_eat' },
     laranja: { idle: 'titan_laranja_idle', eat: 'titan_laranja_eat' },
-    beast: { idle: 'rival_beast', eat: 'rival_beast' },
-    armored: { idle: 'rival_armored', eat: 'rival_armored' },
+    beast: { idle: 'rival_beast', eat: 'titan_beast_eat' },
+    armored: { idle: 'rival_armored', eat: 'titan_armored_eat' },
     colossal: { idle: 'titan_colossal_idle', eat: 'titan_colossal_eat' }
   };
   const TITAN_CHOICES = [
