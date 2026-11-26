@@ -8,7 +8,7 @@
   - 7 variações de humanos.
 - `sprites.js` — metadados do atlas (nome, posição e tamanho de cada frame).
 
-Os **titãs** usam os PNGs individuais transparentes enviados pelo usuário (jogador, Bestial e Blindado), preservando a resolução nativa e o alpha original. O frame de boca aberta do jogador foi adaptado a partir do PNG individual, alterando apenas a região da boca para manter o corpo idêntico ao idle.
+Os **titãs** usam os PNGs individuais transparentes enviados pelo usuário (jogador, Bestial e Blindado), preservando a resolução nativa e o alpha original. Durante a captura, o jogo desenha uma pequena abertura sobre a boca do sprite original, sem alterar ou deformar o restante do personagem.
 
 Os **humanos** continuam vindo da folha de referência em alta resolução, com recorte limpado e leve sharpen. Tudo foi reunido em um atlas PNG RGBA (sem paleta reduzida) para preservar os detalhes dos titãs.
 
