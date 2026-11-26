@@ -1,0 +1,32 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'br.com.attackofhunger'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'br.com.attackofhunger'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+
+    sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/gameAssets')
+}
+
+// Package the actual web game, not a second copy that can drift out of date.
+def copyGameAssets = tasks.register('copyGameAssets', Sync) {
+    into layout.buildDirectory.dir('generated/gameAssets')
+    from('../..') {
+        include 'index.html', 'style.css', 'game.js', 'script.js'
+        include 'assets/**'
+    }
+}
+tasks.named('preBuild').configure { dependsOn copyGameAssets }
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}

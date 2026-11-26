@@ -141,3 +141,18 @@ Durante o desenvolvimento também foi validado em Chromium com simulação mobil
 - Código, cenário procedural, UI e ícone: [MIT](LICENSE).
 - Sprites de personagens: fornecidos pelo usuário; **não** são relicenciados pelo MIT do código. Verifique os direitos antes de distribuir.
 - Fontes **Barlow Condensed** e **Nunito Sans**: SIL Open Font License 1.1. Textos completos em `assets/fonts/*-LICENSE.txt`.
+
+## Aplicativo Android (APK)
+
+O diretório `android/` empacota o mesmo jogo para funcionar offline em um WebView. As preferências e os recordes ficam no armazenamento do aplicativo, separados dos dados do navegador. Requer Android 6.0 ou superior.
+
+Para gerar um APK de teste, instale JDK 17, Android SDK (plataforma 35) e Gradle 8.9 e execute:
+
+```bash
+cd android
+gradle assembleDebug
+```
+
+O arquivo será criado em `android/app/build/outputs/apk/debug/app-debug.apk`. Ele é assinado com a chave de **depuração**, apropriado para testes, não para publicação. Para distribuir na Play Store é necessário configurar uma assinatura de release própria e verificar os direitos dos sprites.
+
+O workflow **Android APK** também gera esse APK como artefato `attack-of-hunger-debug-apk` em cada PR, push para `main` ou execução manual. Após o workflow concluir, baixe o artefato na página da execução no GitHub Actions, extraia o ZIP e instale o APK no celular. O Android pode pedir autorização para instalar aplicativos dessa origem.

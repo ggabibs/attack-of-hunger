@@ -3,3 +3,8 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.log
+
+# Android build output
+.gradle/
+android/local.properties
+android/**/build/
